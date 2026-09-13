@@ -218,17 +218,21 @@
   .cal-nav:hover { border-color: var(--accent); color: var(--accent); }
   .cal-dow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 6px; }
   .cal-dow span { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); text-align: center; }
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 1fr; gap: 4px; flex: 1; }
-  .cal-cell { border: 1px solid var(--border); border-radius: 8px; padding: 5px; display: flex; flex-direction: column; gap: 4px; min-height: 64px; cursor: pointer; background: var(--surface-2); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: minmax(86px, auto); gap: 4px; flex: 1; min-height: 0; overflow-y: auto; }
+  .cal-cell { border: 1px solid var(--border); border-radius: 8px; padding: 5px; display: flex; flex-direction: column; gap: 3px; min-height: 86px; cursor: pointer; background: var(--surface-2); overflow: hidden; }
   .cal-cell:hover { border-color: var(--accent); }
   .cal-cell.outside { opacity: 0.35; }
   .cal-cell.today { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
   .cal-cell.selected { background: color-mix(in srgb, var(--accent) 14%, var(--surface-2)); }
-  .cal-cell .cal-date { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--text-muted); }
+  .cal-cell .cal-date { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
   .cal-cell.today .cal-date { color: var(--accent); font-weight: 700; }
-  .cal-dots { display: flex; flex-wrap: wrap; gap: 3px; }
-  .cal-dots .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--q); }
-  .cal-more { font-size: 9px; color: var(--text-muted); }
+  .cal-tasks { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .cal-task { display: flex; align-items: center; gap: 4px; min-width: 0; border-radius: 3px; padding: 1px 2px; }
+  .cal-task:hover { background: var(--surface); }
+  .cal-task:hover .tt { color: var(--accent); }
+  .cal-task .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--q); flex-shrink: 0; }
+  .cal-task .tt { font-size: 9.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .cal-more { font-size: 9px; color: var(--text-muted); padding-left: 2px; }
 
   /* ---------- scrim + panels ---------- */
   .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 10; }
@@ -304,7 +308,8 @@
   @media (max-width: 760px) {
     .planner { flex-direction: column; }
     .plan-side { width: 100%; }
-    .cal-cell { min-height: 40px; }
+    .cal-cell { min-height: 58px; }
+    .cal-grid { grid-auto-rows: minmax(58px, auto); }
   }
 </style>
 </head>
@@ -813,12 +818,13 @@
       var inMonth = d.getMonth() === m;
       var ids = schedule[key] || [];
       var cls = "cal-cell" + (inMonth ? "" : " outside") + (key === todayKey ? " today" : "") + (key === selectedDate ? " selected" : "");
-      var dotsHtml = ids.slice(0, 4).map(function (id) {
+      var tasksHtml = ids.slice(0, 3).map(function (id) {
         var task = findTask(id);
-        return task ? '<span class="dot" style="--q:var(--q-' + quadrantOf(task) + ')"></span>' : "";
+        if (!task) return "";
+        return '<div class="cal-task" data-id="' + task.id + '"><span class="dot" style="--q:var(--q-' + quadrantOf(task) + ')"></span><span class="tt">' + esc(task.title) + "</span></div>";
       }).join("");
-      var moreHtml = ids.length > 4 ? '<span class="cal-more">+' + (ids.length - 4) + "</span>" : "";
-      html += '<div class="' + cls + '" data-date="' + key + '"><span class="cal-date">' + d.getDate() + '</span><div class="cal-dots">' + dotsHtml + moreHtml + "</div></div>";
+      var moreHtml = ids.length > 3 ? '<span class="cal-more">+' + (ids.length - 3) + "</span>" : "";
+      html += '<div class="' + cls + '" data-date="' + key + '"><span class="cal-date">' + d.getDate() + '</span><div class="cal-tasks">' + tasksHtml + moreHtml + "</div></div>";
     }
     document.getElementById("cal-grid").innerHTML = html;
   }
@@ -856,6 +862,8 @@
   document.getElementById("cal-prev").addEventListener("click", function () { calMonth.setMonth(calMonth.getMonth() - 1); renderPlanner(); });
   document.getElementById("cal-next").addEventListener("click", function () { calMonth.setMonth(calMonth.getMonth() + 1); renderPlanner(); });
   document.getElementById("cal-grid").addEventListener("click", function (e) {
+    var taskRow = e.target.closest(".cal-task");
+    if (taskRow) { openDetail(taskRow.dataset.id); return; }
     var cell = e.target.closest(".cal-cell");
     if (!cell) return;
     selectedDate = cell.dataset.date;
