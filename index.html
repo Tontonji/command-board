@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="th">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -99,7 +99,8 @@
     padding: 12px 18px; background: var(--surface); border-bottom: 1px solid var(--border); z-index: 5;
   }
   .hud-id h1 { font-size: 24px; font-weight: 800; letter-spacing: 0.01em; }
-  .hud-id .sub { font-size: 11px; color: var(--text-muted); letter-spacing: 0.04em; }
+  .hud-id .sub { font-size: 11px; color: var(--text-muted); letter-spacing: 0.02em; margin-top: 2px; }
+  .hud-id .credit { font-size: 9.5px; color: var(--text-muted); opacity: 0.75; margin-top: 2px; }
   .legend { display: flex; gap: 12px; flex-wrap: wrap; }
   .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-muted); }
   .legend-item .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dc); flex-shrink: 0; }
@@ -108,6 +109,11 @@
   .stat .n { font-family: "Big Shoulders Display", sans-serif; font-weight: 800; font-size: 19px; line-height: 1; }
   .stat .l { font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
   .stat.critical .n { color: var(--status-critical); }
+  .lang-btn {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; color: var(--text-muted);
+    font-size: 11px; font-weight: 600; padding: 6px 11px; cursor: pointer;
+  }
+  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
 
   /* ---------- arena ---------- */
   .arena { position: relative; flex: 1; overflow: hidden;
@@ -206,13 +212,27 @@
     background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; color: var(--text);
     padding: 8px 10px; font-size: 13.5px; width: 100%;
   }
-  .toggles { display: flex; gap: 8px; margin-bottom: 12px; }
+  .toggles { display: flex; gap: 8px; margin-bottom: 10px; }
   .pill {
-    font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; border: 1px solid var(--border);
+    font-size: 11px; letter-spacing: 0.05em; border: 1px solid var(--border);
     background: transparent; color: var(--text-muted); border-radius: 20px; padding: 7px 14px; cursor: pointer; flex: 1;
   }
   .pill.on.crucial { background: var(--q-do); border-color: var(--q-do); color: #fff; }
   .pill.on.urgent { background: var(--q-delegate); border-color: var(--q-delegate); color: #fff; }
+
+  .ai-row { display: flex; margin-bottom: 6px; }
+  .ai-btn {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; color: var(--text);
+    font-size: 11px; padding: 6px 13px; cursor: pointer; white-space: nowrap;
+  }
+  .ai-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .ai-btn[disabled] { opacity: 0.6; cursor: default; }
+  .urg-note {
+    display: block; background: none; border: none; padding: 0; text-align: left; width: 100%;
+    font-size: 11px; color: var(--text-muted); margin-bottom: 12px; cursor: default;
+  }
+  .urg-note.resettable { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .urg-note.resettable:hover { color: var(--accent); }
 
   .prog { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
   .prog input[type="range"] { flex: 1; accent-color: var(--accent); }
@@ -228,7 +248,7 @@
   .btn.ghost:hover { border-color: var(--status-critical); color: var(--status-critical); }
 
   .clist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-  .clist:empty::after { content: "No completed activity yet."; color: var(--text-muted); font-size: 12.5px; }
+  .clist:empty::after { content: attr(data-empty-label); color: var(--text-muted); font-size: 12.5px; }
   .crow { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 8px 10px; background: var(--surface-2); border-radius: 4px; border-left: 3px solid var(--q); }
   .crow .title { flex: 1; text-decoration: line-through; color: var(--text-muted); }
   .iconbtn { background: none; border: 1px solid var(--border); border-radius: 3px; color: var(--text-muted); font-size: 11px; padding: 3px 8px; cursor: pointer; }
@@ -248,80 +268,86 @@
   <header class="hud">
     <div class="hud-id">
       <h1>Command Board</h1>
-      <div class="sub">Do &middot; Schedule &middot; Delegate &middot; Delete — size shows priority</div>
+      <div class="sub" data-i18n="sub"></div>
+      <div class="credit" id="credit" data-i18n="credit"></div>
     </div>
     <div class="legend" id="legend">
-      <span class="legend-item"><span class="dot" style="--dc:var(--q-do)"></span>Do</span>
-      <span class="legend-item"><span class="dot" style="--dc:var(--q-schedule)"></span>Schedule</span>
-      <span class="legend-item"><span class="dot" style="--dc:var(--q-delegate)"></span>Delegate</span>
-      <span class="legend-item"><span class="dot" style="--dc:var(--q-delete)"></span>Delete</span>
+      <span class="legend-item"><span class="dot" style="--dc:var(--q-do)"></span><span data-i18n="legendDo"></span></span>
+      <span class="legend-item"><span class="dot" style="--dc:var(--q-schedule)"></span><span data-i18n="legendSchedule"></span></span>
+      <span class="legend-item"><span class="dot" style="--dc:var(--q-delegate)"></span><span data-i18n="legendDelegate"></span></span>
+      <span class="legend-item"><span class="dot" style="--dc:var(--q-delete)"></span><span data-i18n="legendDelete"></span></span>
     </div>
     <div class="stats" id="stats"></div>
+    <button type="button" class="lang-btn" id="lang-toggle">EN</button>
   </header>
 
   <div class="arena" id="arena">
-    <div class="empty-msg" id="empty-msg" hidden>No activity in orbit — tap + to log one.</div>
+    <div class="empty-msg" id="empty-msg" data-i18n="emptyMsg" hidden></div>
     <div class="toast" id="toast" hidden>
-      <span>Example activity shown — clear it to start your own board.</span>
-      <button id="clear-examples" type="button">Clear</button>
+      <span data-i18n="toastMsg"></span>
+      <button id="clear-examples" type="button" data-i18n="toastClear"></button>
     </div>
-    <button class="fab fab-completed" id="fab-completed" type="button">Completed <span class="badge" id="completed-badge">0</span></button>
-    <button class="fab fab-add" id="fab-add" type="button" aria-label="Log new activity">+</button>
+    <button class="fab fab-completed" id="fab-completed" type="button"><span data-i18n="completedFab"></span> <span class="badge" id="completed-badge">0</span></button>
+    <button class="fab fab-add" id="fab-add" type="button" data-i18n-aria="fabAddLabel">+</button>
   </div>
 
   <div class="scrim" id="scrim" hidden></div>
 
-  <div class="panel" id="add-panel" hidden role="dialog" aria-label="Log activity">
-    <div class="phead"><h2>Log activity</h2><button class="close" id="add-close" type="button" aria-label="Close">&times;</button></div>
+  <div class="panel" id="add-panel" hidden role="dialog" data-i18n-aria="addTitle">
+    <div class="phead"><h2 data-i18n="addTitle"></h2><button class="close" id="add-close" type="button" data-i18n-aria="close">&times;</button></div>
     <form id="log-form">
       <div class="field">
-        <label for="f-title">Activity</label>
-        <input type="text" id="f-title" placeholder="e.g. Renew server certificate" required maxlength="120">
+        <label for="f-title" data-i18n="fieldTask"></label>
+        <input type="text" id="f-title" data-i18n-placeholder="taskPlaceholder" required maxlength="120">
       </div>
       <div class="toggles">
-        <button type="button" class="pill crucial" id="f-crucial" data-on="false" aria-pressed="false">Crucial</button>
-        <button type="button" class="pill urgent" id="f-urgent" data-on="false" aria-pressed="false">Urgent</button>
+        <button type="button" class="pill crucial" id="f-crucial" data-on="false" aria-pressed="false" data-i18n="important"></button>
+        <button type="button" class="pill urgent" id="f-urgent" aria-pressed="false" data-i18n="urgent"></button>
       </div>
       <div class="field">
-        <label for="f-due">Due date</label>
+        <label for="f-due" data-i18n="dueDateLabel"></label>
         <input type="date" id="f-due">
       </div>
-      <div class="pfoot"><button type="submit" class="btn primary">Deploy to board</button></div>
+      <div class="ai-row"><button type="button" class="ai-btn" id="f-ai" data-i18n="askAi" hidden></button></div>
+      <button type="button" class="urg-note" id="f-urg-note"></button>
+      <div class="pfoot"><button type="submit" class="btn primary" data-i18n="submitAdd"></button></div>
     </form>
   </div>
 
-  <div class="panel" id="detail-panel" hidden role="dialog" aria-label="Activity detail">
-    <div class="phead"><h2 id="d-title">Activity</h2><button class="close" id="d-close" type="button" aria-label="Close">&times;</button></div>
+  <div class="panel" id="detail-panel" hidden role="dialog" data-i18n-aria="detailAria">
+    <div class="phead"><h2 id="d-title">Activity</h2><button class="close" id="d-close" type="button" data-i18n-aria="close">&times;</button></div>
     <div class="toggles">
-      <button type="button" class="pill crucial" id="d-crucial" aria-pressed="false">Crucial</button>
-      <button type="button" class="pill urgent" id="d-urgent" aria-pressed="false">Urgent</button>
+      <button type="button" class="pill crucial" id="d-crucial" aria-pressed="false" data-i18n="important"></button>
+      <button type="button" class="pill urgent" id="d-urgent" aria-pressed="false" data-i18n="urgent"></button>
     </div>
     <div class="field">
-      <label for="d-due">Due date</label>
+      <label for="d-due" data-i18n="dueDateLabel"></label>
       <input type="date" id="d-due">
     </div>
+    <div class="ai-row"><button type="button" class="ai-btn" id="d-ai" data-i18n="askAi" hidden></button></div>
+    <button type="button" class="urg-note" id="d-urg-note"></button>
     <div class="field">
-      <label>Progress</label>
+      <label data-i18n="progress"></label>
       <div class="prog"><input type="range" min="0" max="100" step="5" id="d-progress"><span class="pct mono" id="d-pct">0%</span></div>
     </div>
     <div class="pfoot">
-      <button type="button" class="btn primary" id="d-done">Mark done</button>
-      <button type="button" class="btn ghost" id="d-delete">Delete</button>
+      <button type="button" class="btn primary" id="d-done" data-i18n="markDone"></button>
+      <button type="button" class="btn ghost" id="d-delete" data-i18n="delete"></button>
     </div>
   </div>
 
-  <div class="panel wide" id="completed-panel" hidden role="dialog" aria-label="Completed activity">
-    <div class="phead"><h2>Completed</h2><button class="close" id="completed-close" type="button" aria-label="Close">&times;</button></div>
+  <div class="panel wide" id="completed-panel" hidden role="dialog" data-i18n-aria="completedTitle">
+    <div class="phead"><h2 data-i18n="completedTitle"></h2><button class="close" id="completed-close" type="button" data-i18n-aria="close">&times;</button></div>
     <ul class="clist" id="list-done"></ul>
   </div>
 
 </div>
-<script id="app-state" type="application/json">{"tasks":[{"id":"seed-1","title":"Fix broken checkout bug","crucial":true,"urgent":true,"dueDate":"__TODAY__","progress":40,"done":false},{"id":"seed-2","title":"Renew business insurance policy","crucial":true,"urgent":true,"dueDate":"__OVERDUE2__","progress":10,"done":false},{"id":"seed-3","title":"Draft Q4 strategy outline","crucial":true,"urgent":false,"dueDate":"__PLUS12__","progress":20,"done":false},{"id":"seed-4","title":"Learn the editor's keyboard shortcuts","crucial":true,"urgent":false,"dueDate":null,"progress":0,"done":false},{"id":"seed-5","title":"Reply to routine vendor emails","crucial":false,"urgent":true,"dueDate":"__PLUS1__","progress":60,"done":false},{"id":"seed-6","title":"Approve minor design tweaks","crucial":false,"urgent":true,"dueDate":"__PLUS2__","progress":0,"done":false},{"id":"seed-7","title":"Scroll the industry news digest","crucial":false,"urgent":false,"dueDate":null,"progress":0,"done":false},{"id":"seed-8","title":"Reorganize old email folders","crucial":false,"urgent":false,"dueDate":null,"progress":50,"done":false}],"seeded":true,"bannerDismissed":false}</script>
+<script id="app-state" type="application/json">{"lang":"th","tasks":[{"id":"seed-1","title":"Fix broken checkout bug","crucial":true,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__TODAY__","progress":40,"done":false},{"id":"seed-2","title":"Renew business insurance policy","crucial":true,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__OVERDUE2__","progress":10,"done":false},{"id":"seed-3","title":"Draft Q4 strategy outline","crucial":true,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__PLUS12__","progress":20,"done":false},{"id":"seed-4","title":"Learn the editor's keyboard shortcuts","crucial":true,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":null,"progress":0,"done":false},{"id":"seed-5","title":"Reply to routine vendor emails","crucial":false,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__PLUS1__","progress":60,"done":false},{"id":"seed-6","title":"Approve minor design tweaks","crucial":false,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__PLUS2__","progress":0,"done":false},{"id":"seed-7","title":"Scroll the industry news digest","crucial":false,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":null,"progress":0,"done":false},{"id":"seed-8","title":"Reorganize old email folders","crucial":false,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":null,"progress":50,"done":false}],"seeded":true,"bannerDismissed":false}</script>
 <script>
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "command-board-state-v2";
+  var STORAGE_KEY = "command-board-state-v3";
 
   function todayStr(offset) {
     var d = new Date();
@@ -346,42 +372,159 @@
   }
 
   var state = loadState();
+  if (state.lang !== "th" && state.lang !== "en") state.lang = "th";
+
   var MIN_R = 42, MAX_R = 118;
   var QUAD_WEIGHT = { "do": 400, "schedule": 300, "delegate": 200, "delete": 100 };
+  var QLABEL_KEY = { "do": "legendDo", "schedule": "legendSchedule", "delegate": "legendDelegate", "delete": "legendDelete" };
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  function quadrantOf(t) {
-    if (t.crucial && t.urgent) return "do";
-    if (t.crucial && !t.urgent) return "schedule";
-    if (!t.crucial && t.urgent) return "delegate";
-    return "delete";
-  }
+  var I18N = {
+    en: {
+      sub: "Do, Schedule, Delegate, Delete — bigger circle means do it sooner",
+      credit: "Made by ตันตันสุดหล่อ",
+      legendDo: "Do", legendSchedule: "Schedule", legendDelegate: "Delegate", legendDelete: "Delete",
+      statActive: "To do", statOverdue: "Late", statToday: "Today",
+      emptyMsg: "Nothing here yet — tap + to add one.",
+      toastMsg: "These are example tasks — clear them to start your own.",
+      toastClear: "Clear",
+      completedFab: "Done",
+      fabAddLabel: "Add a new task",
+      addTitle: "Add a task",
+      detailAria: "Task details",
+      close: "Close",
+      fieldTask: "Task",
+      taskPlaceholder: "e.g. Buy groceries",
+      important: "Important",
+      urgent: "Urgent",
+      dueDateLabel: "Due date",
+      askAi: "Ask AI",
+      thinking: "Thinking…",
+      submitAdd: "Add",
+      progress: "Progress",
+      markDone: "Done",
+      delete: "Delete",
+      completedTitle: "Done",
+      noCompleted: "Nothing done yet.",
+      reopen: "Reopen",
+      urgManual: "You chose this — tap to let it auto-update again",
+      urgAiPrefix: "AI: ",
+      urgAutoNoDate: "No due date — not urgent",
+      urgAutoOverdue: "Late — this is urgent",
+      urgAutoSoon: "Coming up soon — this is urgent",
+      urgAutoLater: "Still time — not urgent yet",
+      dueNone: "No date",
+      dueOverdue: function (n) { return n + (n === 1 ? " day" : " days") + " late"; },
+      dueToday: "Due today",
+      dueIn: function (n) { return n + (n === 1 ? " day" : " days") + " left"; },
+      aiLangName: "English"
+    },
+    th: {
+      sub: "ทำเลย จัดตาราง มอบหมาย ตัดทิ้ง — วงกลมยิ่งใหญ่ ยิ่งต้องรีบทำ",
+      credit: "พัฒนาโดย ตันตันสุดหล่อ",
+      legendDo: "ทำเลย", legendSchedule: "จัดตาราง", legendDelegate: "มอบหมาย", legendDelete: "ตัดทิ้ง",
+      statActive: "ต้องทำ", statOverdue: "เลยกำหนด", statToday: "วันนี้",
+      emptyMsg: "ยังไม่มีงาน — กดปุ่ม + เพื่อเพิ่ม",
+      toastMsg: "นี่คือตัวอย่างงาน — กดล้างเพื่อเริ่มของคุณเอง",
+      toastClear: "ล้าง",
+      completedFab: "เสร็จแล้ว",
+      fabAddLabel: "เพิ่มงานใหม่",
+      addTitle: "เพิ่มงาน",
+      detailAria: "รายละเอียดงาน",
+      close: "ปิด",
+      fieldTask: "ชื่องาน",
+      taskPlaceholder: "เช่น ซื้อของเข้าบ้าน",
+      important: "สำคัญ",
+      urgent: "ด่วน",
+      dueDateLabel: "กำหนดส่ง",
+      askAi: "ถาม AI",
+      thinking: "กำลังคิด…",
+      submitAdd: "เพิ่ม",
+      progress: "ความคืบหน้า",
+      markDone: "เสร็จแล้ว",
+      delete: "ลบ",
+      completedTitle: "เสร็จแล้ว",
+      noCompleted: "ยังไม่มีงานที่เสร็จ",
+      reopen: "เปิดใหม่",
+      urgManual: "คุณตั้งเอง — กดเพื่อให้ระบบคิดใหม่",
+      urgAiPrefix: "AI: ",
+      urgAutoNoDate: "ยังไม่มีกำหนด — ยังไม่ด่วน",
+      urgAutoOverdue: "เลยกำหนดแล้ว — ด่วนมาก",
+      urgAutoSoon: "ใกล้ถึงกำหนด — ด่วน",
+      urgAutoLater: "ยังมีเวลา — ยังไม่ด่วน",
+      dueNone: "ไม่มีกำหนด",
+      dueOverdue: function (n) { return "เลยกำหนด " + n + " วัน"; },
+      dueToday: "ถึงกำหนดวันนี้",
+      dueIn: function (n) { return "เหลืออีก " + n + " วัน"; },
+      aiLangName: "Thai"
+    }
+  };
+  function t(key) { return I18N[state.lang][key]; }
+
   function daysUntil(dateStr) {
     if (!dateStr) return null;
     var due = new Date(dateStr + "T00:00:00");
     var today = new Date(todayStr(0) + "T00:00:00");
     return Math.round((due - today) / 86400000);
   }
-  function dueStatus(t) {
-    var d = daysUntil(t.dueDate);
+
+  function autoUrgentByDate(dueDate) {
+    var d = daysUntil(dueDate);
+    if (d === null) return false;
+    return d <= 2;
+  }
+  function isUrgent(task) {
+    if (task.urgentOverride !== null && task.urgentOverride !== undefined) return task.urgentOverride;
+    if (task.aiUrgent !== null && task.aiUrgent !== undefined) return task.aiUrgent;
+    return autoUrgentByDate(task.dueDate);
+  }
+  function urgencyNoteFor(urgentOverride, aiUrgent, aiReason, dueDate) {
+    if (urgentOverride !== null && urgentOverride !== undefined) return { text: t("urgManual"), resettable: true };
+    if (aiUrgent !== null && aiUrgent !== undefined) return { text: t("urgAiPrefix") + (aiReason || (aiUrgent ? t("urgent") : t("urgAutoLater"))), resettable: false };
+    var d = daysUntil(dueDate);
+    var text = d === null ? t("urgAutoNoDate") : d < 0 ? t("urgAutoOverdue") : d <= 2 ? t("urgAutoSoon") : t("urgAutoLater");
+    return { text: text, resettable: false };
+  }
+  function urgencyNote(task) { return urgencyNoteFor(task.urgentOverride, task.aiUrgent, task.aiReason, task.dueDate); }
+  function buildUrgencyPrompt(title, dueDate, crucial) {
+    var today = todayStr(0);
+    var d = daysUntil(dueDate);
+    var dueInfo = dueDate ? (dueDate + " (" + d + (Math.abs(d) === 1 ? " day" : " days") + " from today)") : "no due date set";
+    return "You help prioritize a personal to-do list using the Eisenhower Matrix. Today's date is " + today + ".\n" +
+      "Task: \"" + title + "\"\n" +
+      "Due date: " + dueInfo + "\n" +
+      "Marked important by the user: " + (crucial ? "yes" : "no") + "\n\n" +
+      "Decide if this task is URGENT — meaning it demands attention very soon or carries real time pressure — based on the task's own wording as well as the due date. A short deadline is not automatically urgent if the task is trivial, and a task with no explicit due date can still be urgent if the wording clearly implies time pressure.\n" +
+      "Reply in " + t("aiLangName") + ". Respond with strict JSON only, no extra text: {\"urgent\": true or false, \"reason\": \"one short sentence, under 12 words\"}";
+  }
+
+  function quadrantOf(task) {
+    var u = isUrgent(task);
+    if (task.crucial && u) return "do";
+    if (task.crucial && !u) return "schedule";
+    if (!task.crucial && u) return "delegate";
+    return "delete";
+  }
+  function dueStatus(task) {
+    var d = daysUntil(task.dueDate);
     if (d === null) return null;
     if (d < 0) return "critical";
     if (d <= 1) return "warning";
     return null;
   }
-  function dueLabel(t) {
-    var d = daysUntil(t.dueDate);
-    if (d === null) return "No deadline";
-    if (d < 0) return "Overdue " + Math.abs(d) + "d";
-    if (d === 0) return "Due today";
-    return "Due in " + d + "d";
+  function dueLabel(task) {
+    var d = daysUntil(task.dueDate);
+    if (d === null) return t("dueNone");
+    if (d < 0) return t("dueOverdue")(Math.abs(d));
+    if (d === 0) return t("dueToday");
+    return t("dueIn")(d);
   }
-  function priorityScore(t) {
-    var q = QUAD_WEIGHT[quadrantOf(t)];
-    var d = daysUntil(t.dueDate);
+  function priorityScore(task) {
+    var q = QUAD_WEIGHT[quadrantOf(task)];
+    var d = daysUntil(task.dueDate);
     var dateScore = 0;
     if (d !== null) dateScore = d < 0 ? 100 + Math.min(-d, 50) : Math.max(50 - d, 0);
-    var progressScore = (100 - t.progress) * 0.2;
+    var progressScore = (100 - task.progress) * 0.2;
     return q + dateScore + progressScore;
   }
   function esc(s) {
@@ -400,10 +543,10 @@
     var min = Math.min.apply(null, scores.concat([Infinity]));
     var max = Math.max.apply(null, scores.concat([-Infinity]));
     var radii = {};
-    active.forEach(function (t) {
-      var s = priorityScore(t);
+    active.forEach(function (task) {
+      var s = priorityScore(task);
       var pct = max === min ? 0.6 : (s - min) / (max - min);
-      radii[t.id] = Math.round(MIN_R + pct * (MAX_R - MIN_R));
+      radii[task.id] = Math.round(MIN_R + pct * (MAX_R - MIN_R));
     });
     return radii;
   }
@@ -413,43 +556,44 @@
 
   function randBetween(a, b) { return a + Math.random() * (b - a); }
 
-  function createBubble(t, r) {
+  function createBubble(task, r) {
     var el = document.createElement("div");
     el.className = "bubble";
     el.setAttribute("role", "button");
     el.setAttribute("tabindex", "0");
     el.innerHTML = '<div class="core"><span class="label"></span></div>';
-    el.addEventListener("click", function () { openDetail(t.id); });
+    el.addEventListener("click", function () { openDetail(task.id); });
     el.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(t.id); }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(task.id); }
     });
     arena.appendChild(el);
     var w = Math.max(arena.clientWidth, 320), h = Math.max(arena.clientHeight, 320);
     var b = {
-      id: t.id, el: el, r: r,
+      id: task.id, el: el, r: r,
       x: randBetween(r, Math.max(r + 1, w - r)),
       y: randBetween(r, Math.max(r + 1, h - r)),
       vx: randBetween(-0.35, 0.35), vy: randBetween(-0.35, 0.35)
     };
-    bubbles.set(t.id, b);
-    updateBubbleVisual(b, t);
+    bubbles.set(task.id, b);
+    updateBubbleVisual(b, task);
     el.style.transform = "translate(" + (b.x - b.r) + "px," + (b.y - b.r) + "px)";
     return b;
   }
 
-  function updateBubbleVisual(b, t) {
+  function updateBubbleVisual(b, task) {
     var el = b.el;
-    el.className = "bubble q-" + quadrantOf(t);
-    var status = dueStatus(t);
+    el.className = "bubble q-" + quadrantOf(task);
+    var status = dueStatus(task);
     if (status) el.classList.add(status);
     el.style.width = el.style.height = b.r * 2 + "px";
-    el.style.setProperty("--pct", t.progress);
+    el.style.setProperty("--pct", task.progress);
     var fontSize = Math.max(10, Math.round(b.r * 0.26));
     var label = el.querySelector(".label");
-    label.textContent = t.title;
+    label.textContent = task.title;
     label.style.fontSize = fontSize + "px";
-    el.title = t.title + " — " + dueLabel(t) + " — " + t.progress + "% done";
-    el.setAttribute("aria-label", t.title + ", " + quadrantOf(t) + " sector, " + dueLabel(t) + ", " + t.progress + " percent done");
+    var qLabel = t(QLABEL_KEY[quadrantOf(task)]);
+    el.title = task.title + " — " + qLabel + " — " + dueLabel(task) + " — " + task.progress + "%";
+    el.setAttribute("aria-label", task.title + ", " + qLabel + ", " + dueLabel(task) + ", " + task.progress + "%");
   }
 
   function popBubble(id) {
@@ -460,36 +604,58 @@
     bubbles.delete(id);
   }
 
+  function applyI18n() {
+    document.documentElement.lang = state.lang;
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      var val = t(el.getAttribute("data-i18n"));
+      if (typeof val === "string") el.textContent = val;
+    });
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(function (el) {
+      el.placeholder = t(el.getAttribute("data-i18n-placeholder"));
+    });
+    document.querySelectorAll("[data-i18n-aria]").forEach(function (el) {
+      el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria")));
+    });
+    document.getElementById("lang-toggle").textContent = state.lang === "th" ? "EN" : "ไทย";
+    document.getElementById("list-done").setAttribute("data-empty-label", t("noCompleted"));
+    syncBubbles();
+    if (!document.getElementById("add-panel").hidden) refreshAddUrgencyUI();
+    if (!document.getElementById("detail-panel").hidden && currentDetailId) {
+      var dt = findTask(currentDetailId);
+      if (dt) refreshDetailUrgencyUI(dt);
+    }
+  }
+
   function syncBubbles() {
-    var active = state.tasks.filter(function (t) { return !t.done; });
-    var done = state.tasks.filter(function (t) { return t.done; });
+    var active = state.tasks.filter(function (task) { return !task.done; });
+    var done = state.tasks.filter(function (task) { return task.done; });
     var radii = computeRadii(active);
     var activeIds = {};
-    active.forEach(function (t) { activeIds[t.id] = true; });
+    active.forEach(function (task) { activeIds[task.id] = true; });
 
     bubbles.forEach(function (b, id) { if (!activeIds[id]) popBubble(id); });
-    active.forEach(function (t) {
-      var b = bubbles.get(t.id);
-      if (!b) { b = createBubble(t, radii[t.id]); }
-      else { b.r = radii[t.id]; updateBubbleVisual(b, t); }
+    active.forEach(function (task) {
+      var b = bubbles.get(task.id);
+      if (!b) { b = createBubble(task, radii[task.id]); }
+      else { b.r = radii[task.id]; updateBubbleVisual(b, task); }
     });
 
     document.getElementById("empty-msg").hidden = active.length !== 0;
 
-    var overdue = active.filter(function (t) { return dueStatus(t) === "critical"; });
-    var dueToday = active.filter(function (t) { return daysUntil(t.dueDate) === 0; });
+    var overdue = active.filter(function (task) { return dueStatus(task) === "critical"; });
+    var dueToday = active.filter(function (task) { return daysUntil(task.dueDate) === 0; });
     document.getElementById("stats").innerHTML =
-      '<div class="stat"><div class="n mono">' + active.length + '</div><div class="l">Active</div></div>' +
-      '<div class="stat critical"><div class="n mono">' + overdue.length + '</div><div class="l">Overdue</div></div>' +
-      '<div class="stat"><div class="n mono">' + dueToday.length + '</div><div class="l">Today</div></div>';
+      '<div class="stat"><div class="n mono">' + active.length + '</div><div class="l">' + esc(t("statActive")) + '</div></div>' +
+      '<div class="stat critical"><div class="n mono">' + overdue.length + '</div><div class="l">' + esc(t("statOverdue")) + '</div></div>' +
+      '<div class="stat"><div class="n mono">' + dueToday.length + '</div><div class="l">' + esc(t("statToday")) + '</div></div>';
 
     document.getElementById("completed-badge").textContent = done.length;
-    document.getElementById("list-done").innerHTML = done.map(function (t) {
+    document.getElementById("list-done").innerHTML = done.map(function (task) {
       return (
-        '<li class="crow" data-id="' + t.id + '" style="--q:var(--q-' + quadrantOf(t) + ')">' +
-          '<span class="title">' + esc(t.title) + "</span>" +
-          '<button type="button" class="iconbtn" data-act="reopen">Reopen</button>' +
-          '<button type="button" class="iconbtn del" data-act="delete">Delete</button>' +
+        '<li class="crow" data-id="' + task.id + '" style="--q:var(--q-' + quadrantOf(task) + ')">' +
+          '<span class="title">' + esc(task.title) + "</span>" +
+          '<button type="button" class="iconbtn" data-act="reopen">' + esc(t("reopen")) + "</button>" +
+          '<button type="button" class="iconbtn del" data-act="delete">' + esc(t("delete")) + "</button>" +
         "</li>"
       );
     }).join("");
@@ -539,13 +705,13 @@
     });
   });
 
+  // AI suggestions need claude.ai — always unavailable on this standalone page, so the buttons stay hidden.
+  var sampleNS = null;
+
   var saveTimer = null;
-  var saveState = "saved";
   function markDirty() { clearTimeout(saveTimer); saveTimer = setTimeout(save, 600); }
   function save() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) { /* storage unavailable — session still works, just won't persist */ }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
   }
 
   var scrim = document.getElementById("scrim");
@@ -554,18 +720,59 @@
   function openPanel(p) { closeAllPanels(); p.hidden = false; scrim.hidden = false; }
   scrim.addEventListener("click", closeAllPanels);
 
-  var fCrucial = document.getElementById("f-crucial"), fUrgent = document.getElementById("f-urgent");
-  function bindToggle(btn) {
-    btn.addEventListener("click", function () {
-      var on = btn.dataset.on === "true";
-      btn.dataset.on = String(!on);
-      btn.classList.toggle("on", !on);
-      btn.setAttribute("aria-pressed", String(!on));
-    });
-  }
-  bindToggle(fCrucial); bindToggle(fUrgent);
+  document.getElementById("lang-toggle").addEventListener("click", function () {
+    state.lang = state.lang === "th" ? "en" : "th";
+    applyI18n();
+    markDirty();
+  });
 
-  document.getElementById("fab-add").addEventListener("click", function () { openPanel(document.getElementById("add-panel")); });
+  var fCrucial = document.getElementById("f-crucial"), fUrgent = document.getElementById("f-urgent");
+  fCrucial.addEventListener("click", function () {
+    var on = fCrucial.dataset.on === "true";
+    fCrucial.dataset.on = String(!on);
+    fCrucial.classList.toggle("on", !on);
+    fCrucial.setAttribute("aria-pressed", String(!on));
+  });
+
+  var draftUrgentOverride = null, draftAiUrgent = null, draftAiReason = null;
+  function currentDraftUrgent() {
+    if (draftUrgentOverride !== null) return draftUrgentOverride;
+    if (draftAiUrgent !== null) return draftAiUrgent;
+    return autoUrgentByDate(document.getElementById("f-due").value || null);
+  }
+  function refreshAddUrgencyUI() {
+    var u = currentDraftUrgent();
+    fUrgent.classList.toggle("on", u);
+    fUrgent.setAttribute("aria-pressed", String(u));
+    var note = urgencyNoteFor(draftUrgentOverride, draftAiUrgent, draftAiReason, document.getElementById("f-due").value || null);
+    var noteEl = document.getElementById("f-urg-note");
+    noteEl.textContent = note.text;
+    noteEl.classList.toggle("resettable", note.resettable);
+  }
+  function resetAddDraft() {
+    draftUrgentOverride = null; draftAiUrgent = null; draftAiReason = null;
+    refreshAddUrgencyUI();
+  }
+  fUrgent.addEventListener("click", function () {
+    draftUrgentOverride = !currentDraftUrgent();
+    refreshAddUrgencyUI();
+  });
+  document.getElementById("f-urg-note").addEventListener("click", function () {
+    if (draftUrgentOverride === null) return;
+    draftUrgentOverride = null;
+    refreshAddUrgencyUI();
+  });
+  document.getElementById("f-due").addEventListener("change", refreshAddUrgencyUI);
+  document.getElementById("f-ai").addEventListener("click", function () {
+    if (!sampleNS) return;
+  });
+
+  document.getElementById("fab-add").addEventListener("click", function () {
+    document.getElementById("log-form").reset();
+    fCrucial.dataset.on = "false"; fCrucial.classList.remove("on"); fCrucial.setAttribute("aria-pressed", "false");
+    resetAddDraft();
+    openPanel(document.getElementById("add-panel"));
+  });
   document.getElementById("add-close").addEventListener("click", closeAllPanels);
 
   document.getElementById("log-form").addEventListener("submit", function (e) {
@@ -574,14 +781,12 @@
     if (!title) return;
     state.tasks.unshift({
       id: uid(), title: title,
-      crucial: fCrucial.dataset.on === "true", urgent: fUrgent.dataset.on === "true",
+      crucial: fCrucial.dataset.on === "true",
       dueDate: document.getElementById("f-due").value || null,
-      progress: 0, done: false
+      progress: 0, done: false,
+      urgentOverride: draftUrgentOverride, aiUrgent: draftAiUrgent, aiReason: draftAiReason
     });
     state.seeded = false;
-    e.target.reset();
-    fCrucial.dataset.on = "false"; fCrucial.classList.remove("on"); fCrucial.setAttribute("aria-pressed", "false");
-    fUrgent.dataset.on = "false"; fUrgent.classList.remove("on"); fUrgent.setAttribute("aria-pressed", "false");
     closeAllPanels();
     syncBubbles(); markDirty();
   });
@@ -593,51 +798,69 @@
 
   var currentDetailId = null;
   var dCrucial = document.getElementById("d-crucial"), dUrgent = document.getElementById("d-urgent");
+  function refreshDetailUrgencyUI(task) {
+    var u = isUrgent(task);
+    dUrgent.classList.toggle("on", u);
+    dUrgent.setAttribute("aria-pressed", String(u));
+    var note = urgencyNote(task);
+    var noteEl = document.getElementById("d-urg-note");
+    noteEl.textContent = note.text;
+    noteEl.classList.toggle("resettable", note.resettable);
+  }
   function openDetail(id) {
-    var t = findTask(id);
-    if (!t) return;
+    var task = findTask(id);
+    if (!task) return;
     currentDetailId = id;
-    document.getElementById("d-title").textContent = t.title;
-    dCrucial.classList.toggle("on", t.crucial);
-    dCrucial.setAttribute("aria-pressed", String(t.crucial));
-    dUrgent.classList.toggle("on", t.urgent);
-    dUrgent.setAttribute("aria-pressed", String(t.urgent));
-    document.getElementById("d-due").value = t.dueDate || "";
-    document.getElementById("d-progress").value = t.progress;
-    document.getElementById("d-pct").textContent = t.progress + "%";
+    document.getElementById("d-title").textContent = task.title;
+    dCrucial.classList.toggle("on", task.crucial);
+    dCrucial.setAttribute("aria-pressed", String(task.crucial));
+    refreshDetailUrgencyUI(task);
+    document.getElementById("d-due").value = task.dueDate || "";
+    document.getElementById("d-progress").value = task.progress;
+    document.getElementById("d-pct").textContent = task.progress + "%";
     openPanel(document.getElementById("detail-panel"));
   }
   document.getElementById("d-close").addEventListener("click", closeAllPanels);
   dCrucial.addEventListener("click", function () {
-    var t = findTask(currentDetailId); if (!t) return;
-    t.crucial = !t.crucial;
-    dCrucial.classList.toggle("on", t.crucial);
-    dCrucial.setAttribute("aria-pressed", String(t.crucial));
+    var task = findTask(currentDetailId); if (!task) return;
+    task.crucial = !task.crucial;
+    dCrucial.classList.toggle("on", task.crucial);
+    dCrucial.setAttribute("aria-pressed", String(task.crucial));
     syncBubbles(); markDirty();
   });
   dUrgent.addEventListener("click", function () {
-    var t = findTask(currentDetailId); if (!t) return;
-    t.urgent = !t.urgent;
-    dUrgent.classList.toggle("on", t.urgent);
-    dUrgent.setAttribute("aria-pressed", String(t.urgent));
+    var task = findTask(currentDetailId); if (!task) return;
+    task.urgentOverride = !isUrgent(task);
+    refreshDetailUrgencyUI(task);
     syncBubbles(); markDirty();
   });
+  document.getElementById("d-urg-note").addEventListener("click", function () {
+    var task = findTask(currentDetailId); if (!task) return;
+    if (task.urgentOverride === null || task.urgentOverride === undefined) return;
+    task.urgentOverride = null;
+    refreshDetailUrgencyUI(task);
+    syncBubbles(); markDirty();
+  });
+  document.getElementById("d-ai").addEventListener("click", function () {
+    if (!sampleNS) return;
+  });
   document.getElementById("d-due").addEventListener("change", function (e) {
-    var t = findTask(currentDetailId); if (!t) return;
-    t.dueDate = e.target.value || null;
+    var task = findTask(currentDetailId); if (!task) return;
+    task.dueDate = e.target.value || null;
+    refreshDetailUrgencyUI(task);
     syncBubbles(); markDirty();
   });
   document.getElementById("d-progress").addEventListener("input", function (e) {
-    var t = findTask(currentDetailId); if (!t) return;
-    t.progress = Number(e.target.value);
-    document.getElementById("d-pct").textContent = t.progress + "%";
-    var b = bubbles.get(t.id);
-    if (b) b.el.style.setProperty("--pct", t.progress);
+    var task = findTask(currentDetailId); if (!task) return;
+    task.progress = Number(e.target.value);
+    document.getElementById("d-pct").textContent = task.progress + "%";
+    var b = bubbles.get(task.id);
+    if (b) b.el.style.setProperty("--pct", task.progress);
   });
   document.getElementById("d-progress").addEventListener("change", function () { syncBubbles(); markDirty(); });
   document.getElementById("d-done").addEventListener("click", function () {
-    var t = findTask(currentDetailId); if (!t) return;
-    t.done = true; t.progress = 100;
+    var task = findTask(currentDetailId); if (!task) return;
+    task.done = true; task.progress = 100;
     closeAllPanels(); syncBubbles(); markDirty();
   });
   document.getElementById("d-delete").addEventListener("click", function () {
@@ -651,16 +874,17 @@
     var btn = e.target.closest("[data-act]");
     if (!btn) return;
     var li = e.target.closest("[data-id]");
-    var t = findTask(li.dataset.id);
-    if (!t) return;
-    if (btn.dataset.act === "reopen") t.done = false;
-    else if (btn.dataset.act === "delete") state.tasks = state.tasks.filter(function (x) { return x.id !== t.id; });
+    var task = findTask(li.dataset.id);
+    if (!task) return;
+    if (btn.dataset.act === "reopen") task.done = false;
+    else if (btn.dataset.act === "delete") state.tasks = state.tasks.filter(function (x) { return x.id !== task.id; });
     syncBubbles(); markDirty();
   });
 
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeAllPanels(); });
 
-  syncBubbles();
+  applyI18n();
+  refreshAddUrgencyUI();
   requestAnimationFrame(stepPhysics);
 })();
 </script>
