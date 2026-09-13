@@ -208,7 +208,7 @@
   .plan-row { display: flex; align-items: center; gap: 9px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; cursor: pointer; width: 100%; text-align: left; }
   .plan-row:hover { border-color: var(--accent); }
   .plan-row .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--q); flex-shrink: 0; }
-  .plan-row.deadline .dot { border-radius: 2px; }
+  .plan-row.deadline .dot { border-radius: 2px; background: var(--status-critical); }
   .plan-row .t { flex: 1; font-size: 12.5px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .plan-row.deadline .t { font-weight: 700; }
   .plan-row .dl-badge {
@@ -237,7 +237,7 @@
   .cal-task:hover { background: var(--surface); }
   .cal-task:hover .tt { color: var(--accent); }
   .cal-task .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--q); flex-shrink: 0; }
-  .cal-task.deadline .dot { border-radius: 2px; }
+  .cal-task.deadline .dot { border-radius: 2px; background: var(--status-critical); }
   .cal-task.deadline .tt { font-weight: 700; }
   .cal-task .tt { font-size: 9.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .cal-more { font-size: 9px; color: var(--text-muted); padding-left: 2px; }
