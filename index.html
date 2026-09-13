@@ -274,7 +274,6 @@
     <div class="legend" id="legend">
       <span class="legend-item"><span class="dot" style="--dc:var(--q-do)"></span><span data-i18n="legendDo"></span></span>
       <span class="legend-item"><span class="dot" style="--dc:var(--q-schedule)"></span><span data-i18n="legendSchedule"></span></span>
-      <span class="legend-item"><span class="dot" style="--dc:var(--q-delegate)"></span><span data-i18n="legendDelegate"></span></span>
       <span class="legend-item"><span class="dot" style="--dc:var(--q-delete)"></span><span data-i18n="legendDelete"></span></span>
     </div>
     <div class="stats" id="stats"></div>
@@ -381,9 +380,9 @@
 
   var I18N = {
     en: {
-      sub: "Do, Schedule, Delegate, Delete — bigger circle means do it sooner",
+      sub: "Do it now, Little by little, Later — bigger circle means do it sooner",
       credit: "Made by ตันตันสุดหล่อ",
-      legendDo: "Do", legendSchedule: "Schedule", legendDelegate: "Delegate", legendDelete: "Delete",
+      legendDo: "Do it now", legendSchedule: "Little by little", legendDelete: "Later",
       statActive: "To do", statOverdue: "Late", statToday: "Today",
       emptyMsg: "Nothing here yet — tap + to add one.",
       toastMsg: "These are example tasks — clear them to start your own.",
@@ -420,9 +419,9 @@
       aiLangName: "English"
     },
     th: {
-      sub: "ทำเลย จัดตาราง มอบหมาย ตัดทิ้ง — วงกลมยิ่งใหญ่ ยิ่งต้องรีบทำ",
+      sub: "ลงมือทำตอนนี้ ทยอยๆ ทำ ทำทีหลังได้ — วงกลมยิ่งใหญ่ ยิ่งต้องรีบทำ",
       credit: "พัฒนาโดย ตันตันสุดหล่อ",
-      legendDo: "ทำเลย", legendSchedule: "จัดตาราง", legendDelegate: "มอบหมาย", legendDelete: "ตัดทิ้ง",
+      legendDo: "ลงมือทำตอนนี้", legendSchedule: "ทยอยๆ ทำ", legendDelete: "ทำทีหลังได้",
       statActive: "ต้องทำ", statOverdue: "เลยกำหนด", statToday: "วันนี้",
       emptyMsg: "ยังไม่มีงาน — กดปุ่ม + เพื่อเพิ่ม",
       toastMsg: "นี่คือตัวอย่างงาน — กดล้างเพื่อเริ่มของคุณเอง",
@@ -499,10 +498,8 @@
   }
 
   function quadrantOf(task) {
-    var u = isUrgent(task);
-    if (task.crucial && u) return "do";
-    if (task.crucial && !u) return "schedule";
-    if (!task.crucial && u) return "delegate";
+    if (isUrgent(task)) return "do";
+    if (task.crucial) return "schedule";
     return "delete";
   }
   function dueStatus(task) {
