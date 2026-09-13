@@ -171,7 +171,7 @@
 
   /* ---------- FABs ---------- */
   .fab {
-    position: absolute; z-index: 4; border: none; cursor: pointer; font-family: "IBM Plex Sans", sans-serif;
+    position: fixed; z-index: 4; border: none; cursor: pointer; font-family: "IBM Plex Sans", sans-serif;
   }
   .fab-add {
     right: 18px; bottom: 18px; width: 54px; height: 54px; border-radius: 50%;
@@ -189,6 +189,46 @@
     background: var(--text-muted); color: var(--surface); border-radius: 10px; padding: 1px 7px;
     font-family: "IBM Plex Mono", monospace; font-size: 10.5px;
   }
+
+  /* ---------- view toggle ---------- */
+  .view-toggle { display: flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; padding: 3px; gap: 2px; }
+  .vt-btn { border: none; background: none; color: var(--text-muted); font-size: 11.5px; font-weight: 600; padding: 6px 13px; border-radius: 16px; cursor: pointer; }
+  .vt-btn.active { background: var(--text); color: var(--bg); }
+
+  /* ---------- planner ---------- */
+  .planner { flex: 1; overflow: auto; display: flex; gap: 16px; padding: 16px 18px; background: var(--bg); }
+  .plan-side { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
+  .focus-card { background: var(--accent); color: var(--accent-ink); border-radius: 12px; padding: 16px; }
+  .focus-card .focus-n { font-family: "Big Shoulders Display", sans-serif; font-weight: 800; font-size: 40px; line-height: 1; }
+  .focus-card .focus-l { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+  .plan-note { font-size: 10.5px; color: var(--text-muted); }
+  .plan-list-head { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
+  .plan-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+  .plan-list:empty::after { content: attr(data-empty-label); color: var(--text-muted); font-size: 12px; }
+  .plan-row { display: flex; align-items: center; gap: 9px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; cursor: pointer; width: 100%; text-align: left; }
+  .plan-row:hover { border-color: var(--accent); }
+  .plan-row .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--q); flex-shrink: 0; }
+  .plan-row .t { flex: 1; font-size: 12.5px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .plan-row .due { font-size: 10px; color: var(--text-muted); font-family: "IBM Plex Mono", monospace; flex-shrink: 0; }
+
+  .plan-cal { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .cal-head h2 { font-size: 18px; font-weight: 700; }
+  .cal-nav { background: var(--surface-2); border: 1px solid var(--border); border-radius: 50%; width: 26px; height: 26px; cursor: pointer; color: var(--text-muted); }
+  .cal-nav:hover { border-color: var(--accent); color: var(--accent); }
+  .cal-dow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 6px; }
+  .cal-dow span { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); text-align: center; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 1fr; gap: 4px; flex: 1; }
+  .cal-cell { border: 1px solid var(--border); border-radius: 8px; padding: 5px; display: flex; flex-direction: column; gap: 4px; min-height: 64px; cursor: pointer; background: var(--surface-2); }
+  .cal-cell:hover { border-color: var(--accent); }
+  .cal-cell.outside { opacity: 0.35; }
+  .cal-cell.today { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .cal-cell.selected { background: color-mix(in srgb, var(--accent) 14%, var(--surface-2)); }
+  .cal-cell .cal-date { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--text-muted); }
+  .cal-cell.today .cal-date { color: var(--accent); font-weight: 700; }
+  .cal-dots { display: flex; flex-wrap: wrap; gap: 3px; }
+  .cal-dots .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--q); }
+  .cal-more { font-size: 9px; color: var(--text-muted); }
 
   /* ---------- scrim + panels ---------- */
   .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 10; }
@@ -261,6 +301,11 @@
     .legend { display: none; }
     .stats { gap: 10px; }
   }
+  @media (max-width: 760px) {
+    .planner { flex-direction: column; }
+    .plan-side { width: 100%; }
+    .cal-cell { min-height: 40px; }
+  }
 </style>
 </head>
 <body>
@@ -278,6 +323,10 @@
       <span class="legend-item"><span class="dot" style="--dc:var(--q-delete)"></span><span data-i18n="legendDelete"></span></span>
     </div>
     <div class="stats" id="stats"></div>
+    <div class="view-toggle">
+      <button type="button" class="vt-btn active" id="view-board" data-i18n="viewBoard" aria-pressed="true"></button>
+      <button type="button" class="vt-btn" id="view-planner" data-i18n="viewPlanner" aria-pressed="false"></button>
+    </div>
     <button type="button" class="lang-btn" id="lang-toggle">EN</button>
   </header>
 
@@ -287,9 +336,31 @@
       <span data-i18n="toastMsg"></span>
       <button id="clear-examples" type="button" data-i18n="toastClear"></button>
     </div>
-    <button class="fab fab-completed" id="fab-completed" type="button"><span data-i18n="completedFab"></span> <span class="badge" id="completed-badge">0</span></button>
-    <button class="fab fab-add" id="fab-add" type="button" data-i18n-aria="fabAddLabel">+</button>
   </div>
+
+  <div class="planner" id="planner" hidden>
+    <aside class="plan-side">
+      <div class="focus-card">
+        <div class="focus-n" id="focus-n">0</div>
+        <div class="focus-l" data-i18n="planFocusLabel"></div>
+      </div>
+      <div class="plan-list-head" id="plan-list-head"></div>
+      <ul class="plan-list" id="plan-list"></ul>
+      <div class="plan-note" data-i18n="planAlgoNote"></div>
+    </aside>
+    <div class="plan-cal">
+      <div class="cal-head">
+        <button type="button" class="cal-nav" id="cal-prev" data-i18n-aria="calPrev">&lsaquo;</button>
+        <h2 id="cal-title">—</h2>
+        <button type="button" class="cal-nav" id="cal-next" data-i18n-aria="calNext">&rsaquo;</button>
+      </div>
+      <div class="cal-dow" id="cal-dow"></div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+  </div>
+
+  <button class="fab fab-completed" id="fab-completed" type="button"><span data-i18n="completedFab"></span> <span class="badge" id="completed-badge">0</span></button>
+  <button class="fab fab-add" id="fab-add" type="button" data-i18n-aria="fabAddLabel">+</button>
 
   <div class="scrim" id="scrim" hidden></div>
 
@@ -349,11 +420,14 @@
 
   var STORAGE_KEY = "command-board-state-v3";
 
+  function dateKey(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
   function todayStr(offset) {
     var d = new Date();
     d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() + (offset || 0));
-    return d.toISOString().slice(0, 10);
+    return dateKey(d);
   }
 
   function loadState() {
@@ -417,7 +491,17 @@
       dueOverdue: function (n) { return n + (n === 1 ? " day" : " days") + " late"; },
       dueToday: "Due today",
       dueIn: function (n) { return n + (n === 1 ? " day" : " days") + " left"; },
-      aiLangName: "English"
+      aiLangName: "English",
+      viewBoard: "Board",
+      viewPlanner: "Planner",
+      planFocusLabel: "Planned for today",
+      planToday: "Today's plan",
+      planEmpty: "Nothing planned this day.",
+      planAlgoNote: "Auto-scheduled: earliest deadline first, up to 3 tasks a day.",
+      calPrev: "Previous month",
+      calNext: "Next month",
+      calDow: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      monthNames: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
     },
     th: {
       sub: "ลงมือทำตอนนี้ ทยอยๆ ทำ ทำทีหลังได้ — วงกลมยิ่งใหญ่ ยิ่งต้องรีบทำ",
@@ -456,7 +540,17 @@
       dueOverdue: function (n) { return "เลยกำหนด " + n + " วัน"; },
       dueToday: "ถึงกำหนดวันนี้",
       dueIn: function (n) { return "เหลืออีก " + n + " วัน"; },
-      aiLangName: "Thai"
+      aiLangName: "Thai",
+      viewBoard: "บอร์ด",
+      viewPlanner: "แผนงาน",
+      planFocusLabel: "งานที่วางแผนไว้วันนี้",
+      planToday: "แผนวันนี้",
+      planEmpty: "วันนี้ไม่มีงานที่วางแผนไว้",
+      planAlgoNote: "จัดคิวอัตโนมัติ: งานใกล้กำหนดก่อน สูงสุด 3 งานต่อวัน",
+      calPrev: "เดือนก่อนหน้า",
+      calNext: "เดือนถัดไป",
+      calDow: ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."],
+      monthNames: ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
     }
   };
   function t(key) { return I18N[state.lang][key]; }
@@ -659,9 +753,122 @@
     }).join("");
 
     document.getElementById("toast").hidden = !(state.seeded && !state.bannerDismissed);
+
+    renderPlanner();
   }
 
+  // ---------- planner: greedy earliest-deadline-first list scheduling with a daily capacity limit ----------
+  var CAPACITY_PER_DAY = 3;
+  var HORIZON_DAYS = 30;
+  var currentView = "board";
+  var calMonth = new Date(); calMonth.setDate(1); calMonth.setHours(0, 0, 0, 0);
+  var selectedDate = todayStr(0);
+
+  function buildSchedule() {
+    var active = state.tasks.filter(function (task) { return !task.done; });
+    var queue = active.slice().sort(function (a, b) { return priorityScore(b) - priorityScore(a); });
+    var todayD = new Date(todayStr(0) + "T00:00:00");
+    var dayLoad = {}, schedule = {};
+    queue.forEach(function (task) {
+      var due = task.dueDate ? new Date(task.dueDate + "T00:00:00") : null;
+      var windowEnd;
+      if (due && due.getTime() < todayD.getTime()) windowEnd = todayD;
+      else if (due) windowEnd = due;
+      else windowEnd = new Date(todayD.getTime() + HORIZON_DAYS * 86400000);
+      var day = new Date(todayD.getTime());
+      var placed = false;
+      while (day.getTime() <= windowEnd.getTime()) {
+        var key = dateKey(day);
+        var load = dayLoad[key] || 0;
+        if (load < CAPACITY_PER_DAY) {
+          dayLoad[key] = load + 1;
+          (schedule[key] = schedule[key] || []).push(task.id);
+          placed = true;
+          break;
+        }
+        day = new Date(day.getTime() + 86400000);
+      }
+      if (!placed) {
+        var key2 = dateKey(windowEnd);
+        dayLoad[key2] = (dayLoad[key2] || 0) + 1;
+        (schedule[key2] = schedule[key2] || []).push(task.id);
+      }
+    });
+    return schedule;
+  }
+
+  function renderPlanCalendar(schedule) {
+    var y = calMonth.getFullYear(), m = calMonth.getMonth();
+    document.getElementById("cal-title").textContent = t("monthNames")[m] + " " + y;
+    document.getElementById("cal-dow").innerHTML = t("calDow").map(function (d) { return "<span>" + esc(d) + "</span>"; }).join("");
+
+    var firstOfMonth = new Date(y, m, 1);
+    var startOffset = (firstOfMonth.getDay() + 6) % 7;
+    var startDate = new Date(y, m, 1 - startOffset);
+    var todayKey = todayStr(0);
+    var html = "";
+    for (var i = 0; i < 42; i++) {
+      var d = new Date(startDate.getTime() + i * 86400000);
+      var key = dateKey(d);
+      var inMonth = d.getMonth() === m;
+      var ids = schedule[key] || [];
+      var cls = "cal-cell" + (inMonth ? "" : " outside") + (key === todayKey ? " today" : "") + (key === selectedDate ? " selected" : "");
+      var dotsHtml = ids.slice(0, 4).map(function (id) {
+        var task = findTask(id);
+        return task ? '<span class="dot" style="--q:var(--q-' + quadrantOf(task) + ')"></span>' : "";
+      }).join("");
+      var moreHtml = ids.length > 4 ? '<span class="cal-more">+' + (ids.length - 4) + "</span>" : "";
+      html += '<div class="' + cls + '" data-date="' + key + '"><span class="cal-date">' + d.getDate() + '</span><div class="cal-dots">' + dotsHtml + moreHtml + "</div></div>";
+    }
+    document.getElementById("cal-grid").innerHTML = html;
+  }
+
+  function renderPlanSidebar(schedule) {
+    var ids = schedule[selectedDate] || [];
+    var tasks = ids.map(findTask).filter(Boolean).sort(function (a, b) { return priorityScore(b) - priorityScore(a); });
+    document.getElementById("plan-list").innerHTML = tasks.map(function (task) {
+      return '<li><button type="button" class="plan-row" data-id="' + task.id + '"><span class="dot" style="--q:var(--q-' + quadrantOf(task) + ')"></span><span class="t">' + esc(task.title) + '</span><span class="due">' + esc(dueLabel(task)) + "</span></button></li>";
+    }).join("");
+    document.getElementById("plan-list").setAttribute("data-empty-label", t("planEmpty"));
+    document.getElementById("plan-list-head").textContent = selectedDate === todayStr(0) ? t("planToday") : selectedDate;
+  }
+
+  function renderPlanner() {
+    var schedule = buildSchedule();
+    var todayCount = (schedule[todayStr(0)] || []).length;
+    document.getElementById("focus-n").textContent = todayCount;
+    renderPlanCalendar(schedule);
+    renderPlanSidebar(schedule);
+  }
+
+  function setView(v) {
+    currentView = v;
+    document.getElementById("arena").hidden = v !== "board";
+    document.getElementById("planner").hidden = v !== "planner";
+    document.getElementById("view-board").classList.toggle("active", v === "board");
+    document.getElementById("view-board").setAttribute("aria-pressed", String(v === "board"));
+    document.getElementById("view-planner").classList.toggle("active", v === "planner");
+    document.getElementById("view-planner").setAttribute("aria-pressed", String(v === "planner"));
+    if (v === "planner") renderPlanner();
+  }
+  document.getElementById("view-board").addEventListener("click", function () { setView("board"); });
+  document.getElementById("view-planner").addEventListener("click", function () { setView("planner"); });
+  document.getElementById("cal-prev").addEventListener("click", function () { calMonth.setMonth(calMonth.getMonth() - 1); renderPlanner(); });
+  document.getElementById("cal-next").addEventListener("click", function () { calMonth.setMonth(calMonth.getMonth() + 1); renderPlanner(); });
+  document.getElementById("cal-grid").addEventListener("click", function (e) {
+    var cell = e.target.closest(".cal-cell");
+    if (!cell) return;
+    selectedDate = cell.dataset.date;
+    renderPlanner();
+  });
+  document.getElementById("plan-list").addEventListener("click", function (e) {
+    var row = e.target.closest(".plan-row");
+    if (!row) return;
+    openDetail(row.dataset.id);
+  });
+
   function stepPhysics() {
+    if (currentView !== "board") { if (!reduceMotion) requestAnimationFrame(stepPhysics); return; }
     var w = arena.clientWidth, h = arena.clientHeight;
     var list = Array.from(bubbles.values());
     list.forEach(function (b) {
