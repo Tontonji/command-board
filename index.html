@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Command Board</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #eef3f7;
+    --grid-line: rgba(20, 33, 46, 0.07);
+    --surface: #ffffff;
+    --surface-2: #f4f6f9;
+    --text: #161b22;
+    --text-muted: #5b6572;
+    --border: #d8dde3;
+    --accent: #d98a2b;
+    --accent-ink: #201200;
+
+    --q-do: #e8433c;
+    --q-schedule: #14b37e;
+    --q-delegate: #2f7fe0;
+    --q-delete: #98a1ac;
+
+    --status-critical: #c23b34;
+    --status-warning: #a5760c;
+    --focus-ring: #d98a2b;
+    --ring-fill: rgba(22, 27, 34, 0.42);
+    --ring-track: rgba(22, 27, 34, 0.12);
+    --scrim: rgba(15, 20, 26, 0.45);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e131a;
+      --grid-line: rgba(255, 255, 255, 0.06);
+      --surface: #171d25;
+      --surface-2: #1c232c;
+      --text: #e7ebf1;
+      --text-muted: #8a93a1;
+      --border: #2b3440;
+      --accent: #e3a15a;
+      --accent-ink: #1a1105;
+
+      --q-do: #f2645d;
+      --q-schedule: #35cc99;
+      --q-delegate: #5b9bf2;
+      --q-delete: #aeb6c0;
+
+      --status-critical: #e4635a;
+      --status-warning: #d9a53f;
+      --focus-ring: #e3a15a;
+      --ring-fill: rgba(231, 235, 241, 0.5);
+      --ring-track: rgba(231, 235, 241, 0.14);
+      --scrim: rgba(4, 6, 10, 0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e131a;
+    --grid-line: rgba(255, 255, 255, 0.06);
+    --surface: #171d25;
+    --surface-2: #1c232c;
+    --text: #e7ebf1;
+    --text-muted: #8a93a1;
+    --border: #2b3440;
+    --accent: #e3a15a;
+    --accent-ink: #1a1105;
+
+    --q-do: #f2645d;
+    --q-schedule: #35cc99;
+    --q-delegate: #5b9bf2;
+    --q-delete: #aeb6c0;
+
+    --status-critical: #e4635a;
+    --status-warning: #d9a53f;
+    --focus-ring: #e3a15a;
+    --ring-fill: rgba(231, 235, 241, 0.5);
+    --ring-track: rgba(231, 235, 241, 0.14);
+    --scrim: rgba(4, 6, 10, 0.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body {
+    margin: 0; height: 100vh; overflow: hidden;
+    background: var(--bg); color: var(--text);
+    font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.5;
+  }
+  #shell { display: flex; flex-direction: column; height: 100vh; }
+
+  h1, h2, h3 { font-family: "Big Shoulders Display", "Arial Narrow", sans-serif; margin: 0; text-wrap: balance; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  button { font: inherit; }
+  input { font-family: inherit; }
+  :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+  /* ---------- HUD ---------- */
+  .hud {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    padding: 12px 18px; background: var(--surface); border-bottom: 1px solid var(--border); z-index: 5;
+  }
+  .hud-id h1 { font-size: 24px; font-weight: 800; letter-spacing: 0.01em; }
+  .hud-id .sub { font-size: 11px; color: var(--text-muted); letter-spacing: 0.04em; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-muted); }
+  .legend-item .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dc); flex-shrink: 0; }
+  .stats { display: flex; gap: 16px; }
+  .stat { text-align: right; }
+  .stat .n { font-family: "Big Shoulders Display", sans-serif; font-weight: 800; font-size: 19px; line-height: 1; }
+  .stat .l { font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+  .stat.critical .n { color: var(--status-critical); }
+
+  /* ---------- arena ---------- */
+  .arena { position: relative; flex: 1; overflow: hidden;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+  .empty-msg {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); font-size: 14px; text-align: center; padding: 0 30px; pointer-events: none;
+  }
+  .toast {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 4;
+    display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 7px 8px 7px 14px; font-size: 12.5px; color: var(--text-muted);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12); max-width: 90vw;
+  }
+  .toast button {
+    background: var(--text); color: var(--bg); border: none; border-radius: 14px; padding: 5px 12px;
+    font-size: 11.5px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+
+  /* ---------- bubbles ---------- */
+  .bubble {
+    position: absolute; left: 0; top: 0; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; padding: 6px;
+    background: conic-gradient(var(--ring-fill) calc(var(--pct, 0) * 1%), var(--ring-track) 0);
+  }
+  .bubble .core {
+    width: 100%; height: 100%; border-radius: 50%; background: var(--fill);
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    box-shadow: inset 0 -6px 14px rgba(0,0,0,0.15), inset 0 3px 6px rgba(255,255,255,0.25);
+  }
+  .bubble .label {
+    color: #fff; font-family: "Big Shoulders Display", sans-serif; font-weight: 700;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.55); line-height: 1.05; padding: 0 8%;
+    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  }
+  .bubble.q-do { --fill: var(--q-do); }
+  .bubble.q-schedule { --fill: var(--q-schedule); }
+  .bubble.q-delegate { --fill: var(--q-delegate); }
+  .bubble.q-delete { --fill: var(--q-delete); }
+  .bubble.warning .core { outline: 3px solid var(--status-warning); outline-offset: 2px; }
+  .bubble.critical .core { outline: 3px solid var(--status-critical); outline-offset: 2px; animation: pulse 1.6s ease-in-out infinite; }
+  .bubble.popping { transition: transform 0.28s ease-in, opacity 0.28s ease-in; transform: scale(1.3); opacity: 0; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-critical) 55%, transparent); }
+    50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--status-critical) 0%, transparent); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bubble.critical .core { animation: none; }
+  }
+
+  /* ---------- FABs ---------- */
+  .fab {
+    position: absolute; z-index: 4; border: none; cursor: pointer; font-family: "IBM Plex Sans", sans-serif;
+  }
+  .fab-add {
+    right: 18px; bottom: 18px; width: 54px; height: 54px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-ink); font-size: 26px; font-weight: 700;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.22); line-height: 1;
+  }
+  .fab-add:hover { filter: brightness(1.06); }
+  .fab-completed {
+    left: 18px; bottom: 18px; border-radius: 20px; padding: 10px 16px; background: var(--surface);
+    color: var(--text); border: 1px solid var(--border); font-size: 12.5px; font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12); display: flex; align-items: center; gap: 7px;
+  }
+  .fab-completed:hover { border-color: var(--accent); color: var(--accent); }
+  .badge {
+    background: var(--text-muted); color: var(--surface); border-radius: 10px; padding: 1px 7px;
+    font-family: "IBM Plex Mono", monospace; font-size: 10.5px;
+  }
+
+  /* ---------- scrim + panels ---------- */
+  .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 10; }
+  .panel {
+    position: fixed; z-index: 11; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow-y: auto;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.28); padding: 18px 20px;
+  }
+  .panel.wide { width: min(460px, calc(100vw - 32px)); }
+  .panel .phead { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .panel .phead h2 { font-size: 20px; font-weight: 700; }
+  .panel .phead .close {
+    background: none; border: 1px solid var(--border); border-radius: 50%; width: 26px; height: 26px;
+    color: var(--text-muted); cursor: pointer; font-size: 14px; flex-shrink: 0;
+  }
+  .panel .phead .close:hover { border-color: var(--status-critical); color: var(--status-critical); }
+
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .field label { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+  .field input[type="text"], .field input[type="date"] {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; color: var(--text);
+    padding: 8px 10px; font-size: 13.5px; width: 100%;
+  }
+  .toggles { display: flex; gap: 8px; margin-bottom: 12px; }
+  .pill {
+    font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; border: 1px solid var(--border);
+    background: transparent; color: var(--text-muted); border-radius: 20px; padding: 7px 14px; cursor: pointer; flex: 1;
+  }
+  .pill.on.crucial { background: var(--q-do); border-color: var(--q-do); color: #fff; }
+  .pill.on.urgent { background: var(--q-delegate); border-color: var(--q-delegate); color: #fff; }
+
+  .prog { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .prog input[type="range"] { flex: 1; accent-color: var(--accent); }
+  .prog .pct { font-family: "IBM Plex Mono", monospace; font-size: 12px; width: 34px; text-align: right; color: var(--text-muted); }
+
+  .pfoot { display: flex; gap: 8px; }
+  .btn {
+    flex: 1; border: none; border-radius: 6px; padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--text); color: var(--bg); }
+  .btn.primary:hover { background: var(--accent); color: var(--accent-ink); }
+  .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+  .btn.ghost:hover { border-color: var(--status-critical); color: var(--status-critical); }
+
+  .clist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .clist:empty::after { content: "No completed activity yet."; color: var(--text-muted); font-size: 12.5px; }
+  .crow { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 8px 10px; background: var(--surface-2); border-radius: 4px; border-left: 3px solid var(--q); }
+  .crow .title { flex: 1; text-decoration: line-through; color: var(--text-muted); }
+  .iconbtn { background: none; border: 1px solid var(--border); border-radius: 3px; color: var(--text-muted); font-size: 11px; padding: 3px 8px; cursor: pointer; }
+  .iconbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .iconbtn.del:hover { border-color: var(--status-critical); color: var(--status-critical); }
+
+  @media (max-width: 620px) {
+    .hud { padding: 10px 12px; }
+    .legend { display: none; }
+    .stats { gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<div id="shell">
+
+  <header class="hud">
+    <div class="hud-id">
+      <h1>Command Board</h1>
+      <div class="sub">Do &middot; Schedule &middot; Delegate &middot; Delete — size shows priority</div>
+    </div>
+    <div class="legend" id="legend">
+      <span class="legend-item"><span class="dot" style="--dc:var(--q-do)"></span>Do</span>
+      <span class="legend-item"><span class="dot" style="--dc:var(--q-schedule)"></span>Schedule</span>
+      <span class="legend-item"><span class="dot" style="--dc:var(--q-delegate)"></span>Delegate</span>
+      <span class="legend-item"><span class="dot" style="--dc:var(--q-delete)"></span>Delete</span>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <div class="arena" id="arena">
+    <div class="empty-msg" id="empty-msg" hidden>No activity in orbit — tap + to log one.</div>
+    <div class="toast" id="toast" hidden>
+      <span>Example activity shown — clear it to start your own board.</span>
+      <button id="clear-examples" type="button">Clear</button>
+    </div>
+    <button class="fab fab-completed" id="fab-completed" type="button">Completed <span class="badge" id="completed-badge">0</span></button>
+    <button class="fab fab-add" id="fab-add" type="button" aria-label="Log new activity">+</button>
+  </div>
+
+  <div class="scrim" id="scrim" hidden></div>
+
+  <div class="panel" id="add-panel" hidden role="dialog" aria-label="Log activity">
+    <div class="phead"><h2>Log activity</h2><button class="close" id="add-close" type="button" aria-label="Close">&times;</button></div>
+    <form id="log-form">
+      <div class="field">
+        <label for="f-title">Activity</label>
+        <input type="text" id="f-title" placeholder="e.g. Renew server certificate" required maxlength="120">
+      </div>
+      <div class="toggles">
+        <button type="button" class="pill crucial" id="f-crucial" data-on="false" aria-pressed="false">Crucial</button>
+        <button type="button" class="pill urgent" id="f-urgent" data-on="false" aria-pressed="false">Urgent</button>
+      </div>
+      <div class="field">
+        <label for="f-due">Due date</label>
+        <input type="date" id="f-due">
+      </div>
+      <div class="pfoot"><button type="submit" class="btn primary">Deploy to board</button></div>
+    </form>
+  </div>
+
+  <div class="panel" id="detail-panel" hidden role="dialog" aria-label="Activity detail">
+    <div class="phead"><h2 id="d-title">Activity</h2><button class="close" id="d-close" type="button" aria-label="Close">&times;</button></div>
+    <div class="toggles">
+      <button type="button" class="pill crucial" id="d-crucial" aria-pressed="false">Crucial</button>
+      <button type="button" class="pill urgent" id="d-urgent" aria-pressed="false">Urgent</button>
+    </div>
+    <div class="field">
+      <label for="d-due">Due date</label>
+      <input type="date" id="d-due">
+    </div>
+    <div class="field">
+      <label>Progress</label>
+      <div class="prog"><input type="range" min="0" max="100" step="5" id="d-progress"><span class="pct mono" id="d-pct">0%</span></div>
+    </div>
+    <div class="pfoot">
+      <button type="button" class="btn primary" id="d-done">Mark done</button>
+      <button type="button" class="btn ghost" id="d-delete">Delete</button>
+    </div>
+  </div>
+
+  <div class="panel wide" id="completed-panel" hidden role="dialog" aria-label="Completed activity">
+    <div class="phead"><h2>Completed</h2><button class="close" id="completed-close" type="button" aria-label="Close">&times;</button></div>
+    <ul class="clist" id="list-done"></ul>
+  </div>
+
+</div>
+<script id="app-state" type="application/json">{"tasks":[{"id":"seed-1","title":"Fix broken checkout bug","crucial":true,"urgent":true,"dueDate":"__TODAY__","progress":40,"done":false},{"id":"seed-2","title":"Renew business insurance policy","crucial":true,"urgent":true,"dueDate":"__OVERDUE2__","progress":10,"done":false},{"id":"seed-3","title":"Draft Q4 strategy outline","crucial":true,"urgent":false,"dueDate":"__PLUS12__","progress":20,"done":false},{"id":"seed-4","title":"Learn the editor's keyboard shortcuts","crucial":true,"urgent":false,"dueDate":null,"progress":0,"done":false},{"id":"seed-5","title":"Reply to routine vendor emails","crucial":false,"urgent":true,"dueDate":"__PLUS1__","progress":60,"done":false},{"id":"seed-6","title":"Approve minor design tweaks","crucial":false,"urgent":true,"dueDate":"__PLUS2__","progress":0,"done":false},{"id":"seed-7","title":"Scroll the industry news digest","crucial":false,"urgent":false,"dueDate":null,"progress":0,"done":false},{"id":"seed-8","title":"Reorganize old email folders","crucial":false,"urgent":false,"dueDate":null,"progress":50,"done":false}],"seeded":true,"bannerDismissed":false}</script>
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "command-board-state-v2";
+
+  function todayStr(offset) {
+    var d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + (offset || 0));
+    return d.toISOString().slice(0, 10);
+  }
+
+  function loadState() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) { /* storage unavailable — fall through to seed data */ }
+    var stateEl = document.getElementById("app-state");
+    var raw = stateEl.textContent
+      .replace(/__TODAY__/g, todayStr(0))
+      .replace(/__OVERDUE2__/g, todayStr(-2))
+      .replace(/__PLUS1__/g, todayStr(1))
+      .replace(/__PLUS2__/g, todayStr(2))
+      .replace(/__PLUS12__/g, todayStr(12));
+    return JSON.parse(raw);
+  }
+
+  var state = loadState();
+  var MIN_R = 42, MAX_R = 118;
+  var QUAD_WEIGHT = { "do": 400, "schedule": 300, "delegate": 200, "delete": 100 };
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function quadrantOf(t) {
+    if (t.crucial && t.urgent) return "do";
+    if (t.crucial && !t.urgent) return "schedule";
+    if (!t.crucial && t.urgent) return "delegate";
+    return "delete";
+  }
+  function daysUntil(dateStr) {
+    if (!dateStr) return null;
+    var due = new Date(dateStr + "T00:00:00");
+    var today = new Date(todayStr(0) + "T00:00:00");
+    return Math.round((due - today) / 86400000);
+  }
+  function dueStatus(t) {
+    var d = daysUntil(t.dueDate);
+    if (d === null) return null;
+    if (d < 0) return "critical";
+    if (d <= 1) return "warning";
+    return null;
+  }
+  function dueLabel(t) {
+    var d = daysUntil(t.dueDate);
+    if (d === null) return "No deadline";
+    if (d < 0) return "Overdue " + Math.abs(d) + "d";
+    if (d === 0) return "Due today";
+    return "Due in " + d + "d";
+  }
+  function priorityScore(t) {
+    var q = QUAD_WEIGHT[quadrantOf(t)];
+    var d = daysUntil(t.dueDate);
+    var dateScore = 0;
+    if (d !== null) dateScore = d < 0 ? 100 + Math.min(-d, 50) : Math.max(50 - d, 0);
+    var progressScore = (100 - t.progress) * 0.2;
+    return q + dateScore + progressScore;
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function uid() { return "t-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function findTask(id) {
+    for (var i = 0; i < state.tasks.length; i++) if (state.tasks[i].id === id) return state.tasks[i];
+    return null;
+  }
+
+  function computeRadii(active) {
+    var scores = active.map(priorityScore);
+    var min = Math.min.apply(null, scores.concat([Infinity]));
+    var max = Math.max.apply(null, scores.concat([-Infinity]));
+    var radii = {};
+    active.forEach(function (t) {
+      var s = priorityScore(t);
+      var pct = max === min ? 0.6 : (s - min) / (max - min);
+      radii[t.id] = Math.round(MIN_R + pct * (MAX_R - MIN_R));
+    });
+    return radii;
+  }
+
+  var arena = document.getElementById("arena");
+  var bubbles = new Map();
+
+  function randBetween(a, b) { return a + Math.random() * (b - a); }
+
+  function createBubble(t, r) {
+    var el = document.createElement("div");
+    el.className = "bubble";
+    el.setAttribute("role", "button");
+    el.setAttribute("tabindex", "0");
+    el.innerHTML = '<div class="core"><span class="label"></span></div>';
+    el.addEventListener("click", function () { openDetail(t.id); });
+    el.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(t.id); }
+    });
+    arena.appendChild(el);
+    var w = Math.max(arena.clientWidth, 320), h = Math.max(arena.clientHeight, 320);
+    var b = {
+      id: t.id, el: el, r: r,
+      x: randBetween(r, Math.max(r + 1, w - r)),
+      y: randBetween(r, Math.max(r + 1, h - r)),
+      vx: randBetween(-0.35, 0.35), vy: randBetween(-0.35, 0.35)
+    };
+    bubbles.set(t.id, b);
+    updateBubbleVisual(b, t);
+    el.style.transform = "translate(" + (b.x - b.r) + "px," + (b.y - b.r) + "px)";
+    return b;
+  }
+
+  function updateBubbleVisual(b, t) {
+    var el = b.el;
+    el.className = "bubble q-" + quadrantOf(t);
+    var status = dueStatus(t);
+    if (status) el.classList.add(status);
+    el.style.width = el.style.height = b.r * 2 + "px";
+    el.style.setProperty("--pct", t.progress);
+    var fontSize = Math.max(10, Math.round(b.r * 0.26));
+    var label = el.querySelector(".label");
+    label.textContent = t.title;
+    label.style.fontSize = fontSize + "px";
+    el.title = t.title + " — " + dueLabel(t) + " — " + t.progress + "% done";
+    el.setAttribute("aria-label", t.title + ", " + quadrantOf(t) + " sector, " + dueLabel(t) + ", " + t.progress + " percent done");
+  }
+
+  function popBubble(id) {
+    var b = bubbles.get(id);
+    if (!b) return;
+    b.el.classList.add("popping");
+    setTimeout(function () { if (b.el.parentNode) b.el.parentNode.removeChild(b.el); }, 320);
+    bubbles.delete(id);
+  }
+
+  function syncBubbles() {
+    var active = state.tasks.filter(function (t) { return !t.done; });
+    var done = state.tasks.filter(function (t) { return t.done; });
+    var radii = computeRadii(active);
+    var activeIds = {};
+    active.forEach(function (t) { activeIds[t.id] = true; });
+
+    bubbles.forEach(function (b, id) { if (!activeIds[id]) popBubble(id); });
+    active.forEach(function (t) {
+      var b = bubbles.get(t.id);
+      if (!b) { b = createBubble(t, radii[t.id]); }
+      else { b.r = radii[t.id]; updateBubbleVisual(b, t); }
+    });
+
+    document.getElementById("empty-msg").hidden = active.length !== 0;
+
+    var overdue = active.filter(function (t) { return dueStatus(t) === "critical"; });
+    var dueToday = active.filter(function (t) { return daysUntil(t.dueDate) === 0; });
+    document.getElementById("stats").innerHTML =
+      '<div class="stat"><div class="n mono">' + active.length + '</div><div class="l">Active</div></div>' +
+      '<div class="stat critical"><div class="n mono">' + overdue.length + '</div><div class="l">Overdue</div></div>' +
+      '<div class="stat"><div class="n mono">' + dueToday.length + '</div><div class="l">Today</div></div>';
+
+    document.getElementById("completed-badge").textContent = done.length;
+    document.getElementById("list-done").innerHTML = done.map(function (t) {
+      return (
+        '<li class="crow" data-id="' + t.id + '" style="--q:var(--q-' + quadrantOf(t) + ')">' +
+          '<span class="title">' + esc(t.title) + "</span>" +
+          '<button type="button" class="iconbtn" data-act="reopen">Reopen</button>' +
+          '<button type="button" class="iconbtn del" data-act="delete">Delete</button>' +
+        "</li>"
+      );
+    }).join("");
+
+    document.getElementById("toast").hidden = !(state.seeded && !state.bannerDismissed);
+  }
+
+  function stepPhysics() {
+    var w = arena.clientWidth, h = arena.clientHeight;
+    var list = Array.from(bubbles.values());
+    list.forEach(function (b) {
+      b.x += b.vx; b.y += b.vy;
+      if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx); }
+      if (b.x + b.r > w) { b.x = w - b.r; b.vx = -Math.abs(b.vx); }
+      if (b.y - b.r < 0) { b.y = b.r; b.vy = Math.abs(b.vy); }
+      if (b.y + b.r > h) { b.y = h - b.r; b.vy = -Math.abs(b.vy); }
+      if (Math.random() < 0.01) {
+        b.vx = Math.max(-0.5, Math.min(0.5, b.vx + randBetween(-0.15, 0.15)));
+        b.vy = Math.max(-0.5, Math.min(0.5, b.vy + randBetween(-0.15, 0.15)));
+      }
+    });
+    for (var i = 0; i < list.length; i++) {
+      for (var j = i + 1; j < list.length; j++) {
+        var a = list[i], c = list[j];
+        var dx = c.x - a.x, dy = c.y - a.y;
+        var dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+        var minDist = a.r + c.r - 6;
+        if (dist < minDist) {
+          var overlap = (minDist - dist) / 2;
+          var nx = dx / dist, ny = dy / dist;
+          a.x -= nx * overlap; a.y -= ny * overlap;
+          c.x += nx * overlap; c.y += ny * overlap;
+        }
+      }
+    }
+    list.forEach(function (b) {
+      b.el.style.transform = "translate(" + (b.x - b.r) + "px," + (b.y - b.r) + "px)";
+    });
+    if (!reduceMotion) requestAnimationFrame(stepPhysics);
+  }
+
+  window.addEventListener("resize", function () {
+    var w = arena.clientWidth, h = arena.clientHeight;
+    bubbles.forEach(function (b) {
+      b.x = Math.min(Math.max(b.x, b.r), Math.max(b.r + 1, w - b.r));
+      b.y = Math.min(Math.max(b.y, b.r), Math.max(b.r + 1, h - b.r));
+    });
+  });
+
+  var saveTimer = null;
+  var saveState = "saved";
+  function markDirty() { clearTimeout(saveTimer); saveTimer = setTimeout(save, 600); }
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) { /* storage unavailable — session still works, just won't persist */ }
+  }
+
+  var scrim = document.getElementById("scrim");
+  var panels = [document.getElementById("add-panel"), document.getElementById("detail-panel"), document.getElementById("completed-panel")];
+  function closeAllPanels() { panels.forEach(function (p) { p.hidden = true; }); scrim.hidden = true; }
+  function openPanel(p) { closeAllPanels(); p.hidden = false; scrim.hidden = false; }
+  scrim.addEventListener("click", closeAllPanels);
+
+  var fCrucial = document.getElementById("f-crucial"), fUrgent = document.getElementById("f-urgent");
+  function bindToggle(btn) {
+    btn.addEventListener("click", function () {
+      var on = btn.dataset.on === "true";
+      btn.dataset.on = String(!on);
+      btn.classList.toggle("on", !on);
+      btn.setAttribute("aria-pressed", String(!on));
+    });
+  }
+  bindToggle(fCrucial); bindToggle(fUrgent);
+
+  document.getElementById("fab-add").addEventListener("click", function () { openPanel(document.getElementById("add-panel")); });
+  document.getElementById("add-close").addEventListener("click", closeAllPanels);
+
+  document.getElementById("log-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var title = document.getElementById("f-title").value.trim();
+    if (!title) return;
+    state.tasks.unshift({
+      id: uid(), title: title,
+      crucial: fCrucial.dataset.on === "true", urgent: fUrgent.dataset.on === "true",
+      dueDate: document.getElementById("f-due").value || null,
+      progress: 0, done: false
+    });
+    state.seeded = false;
+    e.target.reset();
+    fCrucial.dataset.on = "false"; fCrucial.classList.remove("on"); fCrucial.setAttribute("aria-pressed", "false");
+    fUrgent.dataset.on = "false"; fUrgent.classList.remove("on"); fUrgent.setAttribute("aria-pressed", "false");
+    closeAllPanels();
+    syncBubbles(); markDirty();
+  });
+
+  document.getElementById("clear-examples").addEventListener("click", function () {
+    state.tasks = []; state.seeded = false; state.bannerDismissed = true;
+    syncBubbles(); markDirty();
+  });
+
+  var currentDetailId = null;
+  var dCrucial = document.getElementById("d-crucial"), dUrgent = document.getElementById("d-urgent");
+  function openDetail(id) {
+    var t = findTask(id);
+    if (!t) return;
+    currentDetailId = id;
+    document.getElementById("d-title").textContent = t.title;
+    dCrucial.classList.toggle("on", t.crucial);
+    dCrucial.setAttribute("aria-pressed", String(t.crucial));
+    dUrgent.classList.toggle("on", t.urgent);
+    dUrgent.setAttribute("aria-pressed", String(t.urgent));
+    document.getElementById("d-due").value = t.dueDate || "";
+    document.getElementById("d-progress").value = t.progress;
+    document.getElementById("d-pct").textContent = t.progress + "%";
+    openPanel(document.getElementById("detail-panel"));
+  }
+  document.getElementById("d-close").addEventListener("click", closeAllPanels);
+  dCrucial.addEventListener("click", function () {
+    var t = findTask(currentDetailId); if (!t) return;
+    t.crucial = !t.crucial;
+    dCrucial.classList.toggle("on", t.crucial);
+    dCrucial.setAttribute("aria-pressed", String(t.crucial));
+    syncBubbles(); markDirty();
+  });
+  dUrgent.addEventListener("click", function () {
+    var t = findTask(currentDetailId); if (!t) return;
+    t.urgent = !t.urgent;
+    dUrgent.classList.toggle("on", t.urgent);
+    dUrgent.setAttribute("aria-pressed", String(t.urgent));
+    syncBubbles(); markDirty();
+  });
+  document.getElementById("d-due").addEventListener("change", function (e) {
+    var t = findTask(currentDetailId); if (!t) return;
+    t.dueDate = e.target.value || null;
+    syncBubbles(); markDirty();
+  });
+  document.getElementById("d-progress").addEventListener("input", function (e) {
+    var t = findTask(currentDetailId); if (!t) return;
+    t.progress = Number(e.target.value);
+    document.getElementById("d-pct").textContent = t.progress + "%";
+    var b = bubbles.get(t.id);
+    if (b) b.el.style.setProperty("--pct", t.progress);
+  });
+  document.getElementById("d-progress").addEventListener("change", function () { syncBubbles(); markDirty(); });
+  document.getElementById("d-done").addEventListener("click", function () {
+    var t = findTask(currentDetailId); if (!t) return;
+    t.done = true; t.progress = 100;
+    closeAllPanels(); syncBubbles(); markDirty();
+  });
+  document.getElementById("d-delete").addEventListener("click", function () {
+    state.tasks = state.tasks.filter(function (x) { return x.id !== currentDetailId; });
+    closeAllPanels(); syncBubbles(); markDirty();
+  });
+
+  document.getElementById("fab-completed").addEventListener("click", function () { openPanel(document.getElementById("completed-panel")); });
+  document.getElementById("completed-close").addEventListener("click", closeAllPanels);
+  document.getElementById("list-done").addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    var li = e.target.closest("[data-id]");
+    var t = findTask(li.dataset.id);
+    if (!t) return;
+    if (btn.dataset.act === "reopen") t.done = false;
+    else if (btn.dataset.act === "delete") state.tasks = state.tasks.filter(function (x) { return x.id !== t.id; });
+    syncBubbles(); markDirty();
+  });
+
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeAllPanels(); });
+
+  syncBubbles();
+  requestAnimationFrame(stepPhysics);
+})();
+</script>
+</body>
+</html>
