@@ -208,7 +208,13 @@
   .plan-row { display: flex; align-items: center; gap: 9px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; cursor: pointer; width: 100%; text-align: left; }
   .plan-row:hover { border-color: var(--accent); }
   .plan-row .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--q); flex-shrink: 0; }
+  .plan-row.deadline .dot { border-radius: 2px; }
   .plan-row .t { flex: 1; font-size: 12.5px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .plan-row.deadline .t { font-weight: 700; }
+  .plan-row .dl-badge {
+    font-size: 9px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--status-critical);
+    border: 1px solid var(--status-critical); border-radius: 8px; padding: 1px 6px; flex-shrink: 0;
+  }
   .plan-row .due { font-size: 10px; color: var(--text-muted); font-family: "IBM Plex Mono", monospace; flex-shrink: 0; }
 
   .plan-cal { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; }
@@ -231,6 +237,8 @@
   .cal-task:hover { background: var(--surface); }
   .cal-task:hover .tt { color: var(--accent); }
   .cal-task .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--q); flex-shrink: 0; }
+  .cal-task.deadline .dot { border-radius: 2px; }
+  .cal-task.deadline .tt { font-weight: 700; }
   .cal-task .tt { font-size: 9.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .cal-more { font-size: 9px; color: var(--text-muted); padding-left: 2px; }
 
@@ -352,6 +360,7 @@
       <div class="plan-list-head" id="plan-list-head"></div>
       <ul class="plan-list" id="plan-list"></ul>
       <div class="plan-note" data-i18n="planAlgoNote"></div>
+      <div class="plan-note" data-i18n="planLegend"></div>
     </aside>
     <div class="plan-cal">
       <div class="cal-head">
@@ -503,6 +512,9 @@
       planToday: "Today's plan",
       planEmpty: "Nothing planned this day.",
       planAlgoNote: "Auto-scheduled: earliest deadline first, up to 3 tasks a day.",
+      planLegend: "● scheduled to work on it   ■ due that day",
+      deadlineFor: "Deadline:",
+      deadlineBadge: "Deadline",
       calPrev: "Previous month",
       calNext: "Next month",
       calDow: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
@@ -552,6 +564,9 @@
       planToday: "แผนวันนี้",
       planEmpty: "วันนี้ไม่มีงานที่วางแผนไว้",
       planAlgoNote: "จัดคิวอัตโนมัติ: งานใกล้กำหนดก่อน สูงสุด 3 งานต่อวัน",
+      planLegend: "● วันที่วางแผนให้ทำ   ■ วันครบกำหนดส่ง",
+      deadlineFor: "ครบกำหนด:",
+      deadlineBadge: "ครบกำหนด",
       calPrev: "เดือนก่อนหน้า",
       calNext: "เดือนถัดไป",
       calDow: ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."],
@@ -802,7 +817,16 @@
     return schedule;
   }
 
-  function renderPlanCalendar(schedule) {
+  function buildDeadlineMap() {
+    var map = {};
+    state.tasks.forEach(function (task) {
+      if (task.done || !task.dueDate) return;
+      (map[task.dueDate] = map[task.dueDate] || []).push(task.id);
+    });
+    return map;
+  }
+
+  function renderPlanCalendar(schedule, deadlineMap) {
     var y = calMonth.getFullYear(), m = calMonth.getMonth();
     document.getElementById("cal-title").textContent = t("monthNames")[m] + " " + y;
     document.getElementById("cal-dow").innerHTML = t("calDow").map(function (d) { return "<span>" + esc(d) + "</span>"; }).join("");
@@ -816,12 +840,17 @@
       var d = new Date(startDate.getTime() + i * 86400000);
       var key = dateKey(d);
       var inMonth = d.getMonth() === m;
-      var ids = schedule[key] || [];
+      var schedIds = schedule[key] || [];
+      var dueIds = deadlineMap[key] || [];
+      var ids = schedIds.slice();
+      dueIds.forEach(function (id) { if (ids.indexOf(id) === -1) ids.push(id); });
       var cls = "cal-cell" + (inMonth ? "" : " outside") + (key === todayKey ? " today" : "") + (key === selectedDate ? " selected" : "");
       var tasksHtml = ids.slice(0, 3).map(function (id) {
         var task = findTask(id);
         if (!task) return "";
-        return '<div class="cal-task" data-id="' + task.id + '"><span class="dot" style="--q:var(--q-' + quadrantOf(task) + ')"></span><span class="tt">' + esc(task.title) + "</span></div>";
+        var isDeadline = dueIds.indexOf(id) !== -1;
+        var label = (isDeadline ? t("deadlineFor") + " " : "") + task.title;
+        return '<div class="cal-task' + (isDeadline ? " deadline" : "") + '" data-id="' + task.id + '" title="' + esc(label) + '"><span class="dot" style="--q:var(--q-' + quadrantOf(task) + ')"></span><span class="tt">' + esc(task.title) + "</span></div>";
       }).join("");
       var moreHtml = ids.length > 3 ? '<span class="cal-more">+' + (ids.length - 3) + "</span>" : "";
       html += '<div class="' + cls + '" data-date="' + key + '"><span class="cal-date">' + d.getDate() + '</span><div class="cal-tasks">' + tasksHtml + moreHtml + "</div></div>";
@@ -829,22 +858,28 @@
     document.getElementById("cal-grid").innerHTML = html;
   }
 
-  function renderPlanSidebar(schedule) {
-    var ids = schedule[selectedDate] || [];
+  function renderPlanSidebar(schedule, deadlineMap) {
+    var schedIds = schedule[selectedDate] || [];
+    var dueIds = deadlineMap[selectedDate] || [];
+    var ids = schedIds.slice();
+    dueIds.forEach(function (id) { if (ids.indexOf(id) === -1) ids.push(id); });
     var tasks = ids.map(findTask).filter(Boolean).sort(function (a, b) { return priorityScore(b) - priorityScore(a); });
     document.getElementById("plan-list").innerHTML = tasks.map(function (task) {
-      return '<li><button type="button" class="plan-row" data-id="' + task.id + '"><span class="dot" style="--q:var(--q-' + quadrantOf(task) + ')"></span><span class="t">' + esc(task.title) + '</span><span class="due">' + esc(dueLabel(task)) + "</span></button></li>";
+      var isDeadline = dueIds.indexOf(task.id) !== -1;
+      return '<li><button type="button" class="plan-row' + (isDeadline ? " deadline" : "") + '" data-id="' + task.id + '"><span class="dot" style="--q:var(--q-' + quadrantOf(task) + ')"></span><span class="t">' + esc(task.title) + '</span>' + (isDeadline ? '<span class="dl-badge" data-i18n="deadlineBadge"></span>' : "") + '<span class="due">' + esc(dueLabel(task)) + "</span></button></li>";
     }).join("");
     document.getElementById("plan-list").setAttribute("data-empty-label", t("planEmpty"));
     document.getElementById("plan-list-head").textContent = selectedDate === todayStr(0) ? t("planToday") : selectedDate;
+    document.querySelectorAll("#plan-list [data-i18n]").forEach(function (el) { el.textContent = t(el.getAttribute("data-i18n")); });
   }
 
   function renderPlanner() {
     var schedule = buildSchedule();
+    var deadlineMap = buildDeadlineMap();
     var todayCount = (schedule[todayStr(0)] || []).length;
     document.getElementById("focus-n").textContent = todayCount;
-    renderPlanCalendar(schedule);
-    renderPlanSidebar(schedule);
+    renderPlanCalendar(schedule, deadlineMap);
+    renderPlanSidebar(schedule, deadlineMap);
   }
 
   function setView(v) {
