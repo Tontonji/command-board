@@ -716,7 +716,15 @@
     return null;
   }
 
+  function getRadiusRange() {
+    var w = arena.clientWidth || window.innerWidth;
+    if (w <= 480) return { min: 24, max: 46 };
+    if (w <= 760) return { min: 38, max: 84 };
+    return { min: MIN_R, max: MAX_R };
+  }
+
   function computeRadii(active) {
+    var range = getRadiusRange();
     var scores = active.map(priorityScore);
     var min = Math.min.apply(null, scores.concat([Infinity]));
     var max = Math.max.apply(null, scores.concat([-Infinity]));
@@ -724,7 +732,7 @@
     active.forEach(function (task) {
       var s = priorityScore(task);
       var pct = max === min ? 0.6 : (s - min) / (max - min);
-      radii[task.id] = Math.round(MIN_R + pct * (MAX_R - MIN_R));
+      radii[task.id] = Math.round(range.min + pct * (range.max - range.min));
     });
     return radii;
   }
@@ -1013,6 +1021,7 @@
   }
 
   window.addEventListener("resize", function () {
+    syncBubbles();
     var w = arena.clientWidth, h = arena.clientHeight;
     bubbles.forEach(function (b) {
       b.x = Math.min(Math.max(b.x, b.r), Math.max(b.r + 1, w - b.r));
