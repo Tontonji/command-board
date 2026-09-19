@@ -340,6 +340,7 @@
       <button type="button" class="vt-btn active" id="view-board" data-i18n="viewBoard" aria-pressed="true"></button>
       <button type="button" class="vt-btn" id="view-planner" data-i18n="viewPlanner" aria-pressed="false"></button>
     </div>
+    <button type="button" class="lang-btn" id="theme-toggle">Dark</button>
     <button type="button" class="lang-btn" id="lang-toggle">EN</button>
   </header>
 
@@ -427,7 +428,7 @@
   </div>
 
 </div>
-<script id="app-state" type="application/json">{"lang":"th","tasks":[{"id":"seed-1","title":"Fix broken checkout bug","crucial":true,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__TODAY__","progress":40,"done":false},{"id":"seed-2","title":"Renew business insurance policy","crucial":true,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__OVERDUE2__","progress":10,"done":false},{"id":"seed-3","title":"Draft Q4 strategy outline","crucial":true,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__PLUS12__","progress":20,"done":false},{"id":"seed-4","title":"Learn the editor's keyboard shortcuts","crucial":true,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":null,"progress":0,"done":false},{"id":"seed-5","title":"Reply to routine vendor emails","crucial":false,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__PLUS1__","progress":60,"done":false},{"id":"seed-6","title":"Approve minor design tweaks","crucial":false,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__PLUS2__","progress":0,"done":false},{"id":"seed-7","title":"Scroll the industry news digest","crucial":false,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":null,"progress":0,"done":false},{"id":"seed-8","title":"Reorganize old email folders","crucial":false,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":null,"progress":50,"done":false}],"seeded":true,"bannerDismissed":false}</script>
+<script id="app-state" type="application/json">{"lang":"th","theme":null,"tasks":[{"id":"seed-1","title":"Fix broken checkout bug","crucial":true,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__TODAY__","progress":40,"done":false},{"id":"seed-2","title":"Renew business insurance policy","crucial":true,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__OVERDUE2__","progress":10,"done":false},{"id":"seed-3","title":"Draft Q4 strategy outline","crucial":true,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__PLUS12__","progress":20,"done":false},{"id":"seed-4","title":"Learn the editor's keyboard shortcuts","crucial":true,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":null,"progress":0,"done":false},{"id":"seed-5","title":"Reply to routine vendor emails","crucial":false,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__PLUS1__","progress":60,"done":false},{"id":"seed-6","title":"Approve minor design tweaks","crucial":false,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":"__PLUS2__","progress":0,"done":false},{"id":"seed-7","title":"Scroll the industry news digest","crucial":false,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":null,"progress":0,"done":false},{"id":"seed-8","title":"Reorganize old email folders","crucial":false,"urgentOverride":null,"aiUrgent":null,"aiReason":null,"dueDate":null,"progress":50,"done":false}],"seeded":true,"bannerDismissed":false}</script>
 <script>
 (function () {
   "use strict";
@@ -461,6 +462,25 @@
 
   var state = loadState();
   if (state.lang !== "th" && state.lang !== "en") state.lang = "th";
+  if (state.theme !== "light" && state.theme !== "dark") state.theme = null;
+
+  function applyTheme() {
+    if (state.theme === "light" || state.theme === "dark") {
+      document.documentElement.setAttribute("data-theme", state.theme);
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+    var resolvedDark = state.theme === "dark" || (state.theme === null && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    var btn = document.getElementById("theme-toggle");
+    btn.textContent = resolvedDark ? t("themeLight") : t("themeDark");
+    btn.setAttribute("aria-pressed", String(state.theme !== null));
+  }
+  document.getElementById("theme-toggle").addEventListener("click", function () {
+    var resolvedDark = state.theme === "dark" || (state.theme === null && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    state.theme = resolvedDark ? "light" : "dark";
+    applyTheme();
+    markDirty();
+  });
 
   var MIN_R = 60, MAX_R = 164;
   var QUAD_WEIGHT = { "do": 400, "schedule": 300, "delegate": 200, "delete": 100 };
@@ -506,6 +526,8 @@
       dueToday: "Due today",
       dueIn: function (n) { return n + (n === 1 ? " day" : " days") + " left"; },
       aiLangName: "English",
+      themeLight: "Light",
+      themeDark: "Dark",
       viewBoard: "Board",
       viewPlanner: "Planner",
       planFocusLabel: "Planned for today",
@@ -558,6 +580,8 @@
       dueToday: "ถึงกำหนดวันนี้",
       dueIn: function (n) { return "เหลืออีก " + n + " วัน"; },
       aiLangName: "Thai",
+      themeLight: "สว่าง",
+      themeDark: "มืด",
       viewBoard: "บอร์ด",
       viewPlanner: "แผนงาน",
       planFocusLabel: "งานที่วางแผนไว้วันนี้",
@@ -729,6 +753,7 @@
       el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria")));
     });
     document.getElementById("lang-toggle").textContent = state.lang === "th" ? "EN" : "ไทย";
+    applyTheme();
     document.getElementById("list-done").setAttribute("data-empty-label", t("noCompleted"));
     syncBubbles();
     if (!document.getElementById("add-panel").hidden) refreshAddUrgencyUI();
@@ -1131,6 +1156,7 @@
 
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeAllPanels(); });
 
+  applyTheme();
   applyI18n();
   refreshAddUrgencyUI();
   requestAnimationFrame(stepPhysics);
